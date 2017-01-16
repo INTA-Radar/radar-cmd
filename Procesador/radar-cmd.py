@@ -30,16 +30,16 @@ parser.add_argument('-f', metavar='--files', type=str, nargs=1, required=True,
 parser.add_argument('-o', metavar='--output', type=str, nargs=1, required=True,
                     help='Archivo de salida.')
 
+parser.add_argument('-ele', metavar='--elevation', type=int, nargs=1, required=True,
+                    help='Numero de elevación (o sweep)')
+
+parser.add_argument('-var', metavar='--variable',choices=['dBZ', 'ZDR','RhoHV','uPhiDP'], type=str, nargs=1, required=True,
+                    help='Variable del radar a procesar. Posible valores: dBZ, ZDR, RhoHV y uPhiDP' )
+
 parser.add_argument('-m', action='store_true',
                     help='Indica que se requiere hacer un mosaico de los archivos de entrada.'
                          'En el parametro \'-f\' se deberan indicar los archivos de entrada separados por \',\' (comas). Ej:'
                          '-f radar1.vol,radar2.vol,radar3.vol,radarN.vol')
-
-parser.add_argument('-ele', metavar='--elevation', type=int, nargs=1, required=True,
-                    help='Elevacion o sweep')
-
-parser.add_argument('-var', metavar='--variable',choices=['dBZ', 'ZDR','RhoHV','uPhiDP'], type=str, nargs=1, required=True,
-                    help='Variable del radar a procesar. Posible valores: dBZ, ZDR,RhoHV y uPhiDP' )
 
 parser.add_argument('-grid', action='store_true',
                     help='Indica que se requiere guardar la grilla cartesiana en un archivo .grib')
