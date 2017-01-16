@@ -38,4 +38,10 @@ Aplicación de línea de comandos para procesamiento de volumenes y utilizando P
     -img_type --imageType
                         Parámetro de formato de imagen de salida. JPEG y PNG son los
                         parametros posibles
+    -img_method --imageMethod
+                        Metodo por el cual se genera la imagen de salida (solo
+                        para los graficos individuales, NO APLICA cuando se
+                        genera la imagen de un mosaico). Valores posibles: 'grid' --> a
+                        partir de la grilla cartesiana generada, 'simple' -->
+                        datos obtenidos directamente del radar                      
 

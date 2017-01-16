@@ -53,8 +53,14 @@ parser.add_argument('-img', action='store_true',
 parser.add_argument('-img_type', metavar='--imageType', type=str, choices=['JPEG','PNG'], nargs=1, default='PNG',
                     help='Tipo de imagen de salida. JPEG y PNG son los parametros posibles')
 
-# Parametrizar grafico individual (grilla o comun)
-# Plotear mapa en grafico comun
+parser.add_argument('-img_method', metavar='--imageMethod', type=str, choices=['grid','simple'], nargs=1, default='grid',
+                    help='Metodo por el cual se genera la imagen de salida (solo para los graficos individuales, NO '
+                         'APLICA cuando se genera la imagen de un mosaico). Valores posibles: '
+                         '\'grid\' --> a partir de la grilla cartesiana generada, '
+                         '\'simple\' --> datos obtenidos directamente del radar')
+
+# Parametrizar grafico individual (grilla o comun) --> hecho
+# Plotear mapa en grafico comun --> hecho
 # Calidad de imagen de salida
 # Parametrizar padding grilla
 
@@ -124,7 +130,14 @@ try:
         rrp = RainbowRadarProcessor(rr,radar_variable)
 
         if args['img']:
-            rrp.saveImageToFile(elevation=sweep,pathOutput=out_path,fileOutput=out_file_name,imageType=imgType)
+            metodo = ''
+
+            if args['img_method'][0]=='grid':
+                metodo = 'grid'
+            elif args['img_method'][0] == 'simple':
+                metodo = 'simple'
+            rrp.saveImageToFile(elevation=sweep, pathOutput=out_path, fileOutput=out_file_name, imageType=imgType,
+                                    method=metodo)
         if args['gtif']:
             rrp.saveToGTiff(sweep,out_path,out_file_name)
         if args['grid']:

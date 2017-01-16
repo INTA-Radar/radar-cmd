@@ -14,7 +14,7 @@ from matplotlib import colors
 import numpy
 import os.path
 import pyart.aux_io
-from pyart.graph import RadarDisplay,common,GridMapDisplay
+from pyart.graph import RadarDisplay,common,GridMapDisplay,RadarMapDisplay
 import pyart.map
 import pyart.config
 import wradlib as wrl
@@ -219,7 +219,7 @@ class RainbowRadarProcessor(object):
         '''Devuelve un objeto de tipo Radar con los datos del volumen'''
         return self.__radarData
 
-    def getRawDataImage(self, elevation, figsize=(10, 10), paddingImg=5):
+    def getRawDataImage(self, elevation, figsize=(10, 10), paddingImg=5, basemapFlag=True, basemapShapeFile=None):
         '''
 
         Este metodo retorna la imagen bidimensional del retorno radarico segun
@@ -231,29 +231,55 @@ class RainbowRadarProcessor(object):
         '''
 
         if not elevation in self.__elevationImages:
-            print 'Creando elevacion = '+str(elevation)
+
             eleN = self.__radarData.extract_sweeps([elevation])
             display_variable = RadarDisplay(eleN)
 
             fig = plt.figure(figsize=figsize)
-            xlabel = 'Distancia en X (km)'
-            ylabel = 'Distancia en Y (km)'
-
-            range = [-self.__stopRange - paddingImg, self.__stopRange + paddingImg]
+            fig.add_subplot(1, 1, 1, aspect=1.0)
             rangoAnillos = self.__stopRange / 4
             anillos = [rangoAnillos, rangoAnillos * 2, rangoAnillos * 3, self.__stopRange]
-            Rmax = self.__stopRange
 
-            fig.add_subplot(1, 1, 1, aspect=1.0)
-            display_variable.plot_ppi(self.__radarVariable[1],
-                                      colorbar_label=self.__radarVariable[0],
-                                      axislabels=(xlabel, ylabel),
-                                      vmin=self.__radarVariable[3],
-                                      vmax=self.__radarVariable[4],
-                                      cmap=self.__radarVariable[2])
-            display_variable.plot_range_rings(anillos,lw=0.5)
-            display_variable.set_limits(range, range)
-            display_variable.plot_cross_hair(Rmax)
+            if basemapFlag:
+                display_variable = RadarMapDisplay(eleN)
+                # Si hay un shapefile elegido por el usuario se toma ese, en otro caso se toma el shapefile por defecto
+                if basemapShapeFile != None:
+
+                    display_variable.plot_ppi_map(self.__radarVariable[1],
+                                                  colorbar_label=self.__radarVariable[0],
+                                                  vmin=self.__radarVariable[3],
+                                                  vmax=self.__radarVariable[4],
+                                                  cmap=self.__radarVariable[2],
+                                                  shapefile=basemapShapeFile)
+                else:
+                    display_variable.plot_ppi_map(self.__radarVariable[1],
+                                                  colorbar_label=self.__radarVariable[0],
+                                                  vmin=self.__radarVariable[3],
+                                                  vmax=self.__radarVariable[4],
+                                                  cmap=self.__radarVariable[2],
+                                                  shapefile=os.path.dirname(
+                                                      __file__) + '/DEPARTAMENTOS_2D/departamentos_2d')
+                    display_variable.basemap.fillcontinents(lake_color='aqua',
+                                                            alpha=0.2)
+            else:
+                xlabel = 'Distancia en X (km)'
+                ylabel = 'Distancia en Y (km)'
+
+                range = [-self.__stopRange - paddingImg, self.__stopRange + paddingImg]
+
+                Rmax = self.__stopRange
+
+                display_variable.plot_ppi(self.__radarVariable[1],
+                                          colorbar_label=self.__radarVariable[0],
+                                          axislabels=(xlabel, ylabel),
+                                          vmin=self.__radarVariable[3],
+                                          vmax=self.__radarVariable[4],
+                                          cmap=self.__radarVariable[2])
+
+                display_variable.set_limits(range, range)
+                display_variable.plot_cross_hair(Rmax)
+
+            display_variable.plot_range_rings(anillos, lw=0.5)
 
 
             self.__elevationImages[elevation] = fig2img(plt.gcf())
@@ -281,7 +307,7 @@ class RainbowRadarProcessor(object):
                     grid_plot.basemap.readshapefile(basemapShapeFile,
                                                     os.path.basename(basemapShapeFile))
                 else:
-                    grid_plot.basemap.readshapefile('DEPARTAMENTOS_2D/departamentos_2d',
+                    grid_plot.basemap.readshapefile(os.path.dirname(__file__)+'/DEPARTAMENTOS_2D/departamentos_2d',
                                                 'departamentos')
 
                 grid_plot.basemap.fillcontinents(lake_color='aqua',
@@ -344,7 +370,7 @@ class RainbowRadarProcessor(object):
         self.getImageFromCartesianGrid(elevation).show()
 
     def saveImageToFile(self, elevation=0, figsize=(10, 10), paddingImg=0, pathOutput=None, fileOutput=None,
-                        imageType=PNG):
+                        imageType=PNG,method='grid'):
         '''
         Guarda en un archivo el grafico de la elevacion seleccionada.
 
@@ -355,8 +381,15 @@ class RainbowRadarProcessor(object):
         @param paddingImg se usa para agregarle un borde en blanco a la imagen
         @param imageType es el formato de la imagen en que se va a guardar la imagen
         '''
-        elevationImg = self.getImageFromCartesianGrid(elevation=elevation, figsize=figsize,
+        elevationImg = None
+        if method == 'grid':
+            elevationImg = self.getImageFromCartesianGrid(elevation=elevation, figsize=figsize,
                                                       paddingImg=paddingImg)
+        elif method == 'simple':
+            elevationImg = self.getRawDataImage(elevation=elevation, figsize=figsize,
+                                                          paddingImg=paddingImg)
+        else:
+            raise Exception("El metodo "+method+" no es un metodo valido para obtener la imagen. Posibles: [grid,simple] ")
 
         if (fileOutput != None and pathOutput != None):
             elevationImg.save(pathOutput + fileOutput+"_elevacion_"+str(elevation) + '.' + imageType)
