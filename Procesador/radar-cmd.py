@@ -134,10 +134,11 @@ try:
         if args['img']:
             metodo = ''
 
-            if args['img_method'][0]=='grid':
+            if args['img_method'] =='grid':
                 metodo = 'grid'
-            elif args['img_method'][0] == 'simple':
+            elif args['img_method'] == 'simple':
                 metodo = 'simple'
+
             rrp.saveImageToFile(elevation=sweep, pathOutput=out_path, fileOutput=out_file_name, imageType=imgType,
                                     method=metodo)
         if args['gtif']:
