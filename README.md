@@ -3,10 +3,10 @@ Aplicación de línea de comandos para procesamiento de volumenes utilizando Py-
 
 ## Dependencias
 
-1. [Py-ART] (https://github.com/ARM-DOE/pyart)
-2. [Geopy] (https://github.com/geopy/geopy)  
-3. [Wradlib] (https://github.com/wradlib/wradlib)
-4. [HDF5] (https://pypi.python.org/pypi/h5py)
+1. [Py-ART](https://github.com/ARM-DOE/pyart)
+2. [Geopy](https://github.com/geopy/geopy)  
+3. [Wradlib](https://github.com/wradlib/wradlib)
+4. [HDF5](https://pypi.python.org/pypi/h5py)
  
 ## Modo de uso
 
@@ -127,3 +127,43 @@ Quizás en el ultimo comando sea necesario usar permisos de super-usuario (```su
 Finalmente, instalamos basemap:
 
     python setup.py install
+    
+### Estado final de librerias
+
+Una vez hecha la instalación se pueden verificar las versiones de las librerias instaladas con ```pip freeze ```. Un estado valido sobre el cual esta herramienta funciona correctamente es el siguiente:
+
+    arm-pyart==1.10.0
+    basemap==1.0.7
+    cycler==0.10.0
+    deprecation==2.0.2
+    functools32==3.2.3.post2
+    GDAL==1.10.0
+    geographiclib==1.49
+    geopy==1.13.0
+    h5py==2.7.1
+    matplotlib==2.0.2
+    netCDF4==1.3.1
+    numpy==1.14.2
+    packaging==17.1
+    Pillow==5.1.0
+    pyparsing==2.2.0
+    pyproj==1.9.5.1
+    pyshp==1.2.12
+    python-dateutil==2.7.2
+    pytz==2018.4
+    scipy==1.0.1
+    six==1.11.0
+    subprocess32==3.2.7
+    wradlib==0.9.0
+    xmltodict==0.11.0
+ 
+
+## Testing
+
+Para ejecutar el script de testing:
+1. Descomprimir el archivo dentro de la carpeta ```datos.tar.gz``` que se encuentra en la carpeta ```Testing```.
+2. En linea de comandos, cambiar el directorio (```cd```) a la carpeta ```Testing```
+3. Si la carpeta ```res``` no existe, crearla: ```mkdir res```
+4. Teniendo el entorno virtual activado (```source ~/radar_wrap/bin/activate```) ejecutar el script ```Test.py```
+
+Si la ejecución no arroja errores entonces la instalación del entorno fué exitosa.

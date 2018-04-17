@@ -9,8 +9,8 @@ __status__ = "Produccion"
 
 import argparse
 import os
-import RadarDataProcesor
-from RadarDataProcesor import RainbowRadar,RainbowRadarProcessor,MosaicGenerator
+import RadarDataProcessor
+from RadarDataProcessor import RainbowRadar,RainbowRadarProcessor,MosaicGenerator
 import sys,traceback
 
 class bcolors:
@@ -88,23 +88,23 @@ for file in files:
     rainbow_radars.append(rr)
 
 radar_variable = None
-if str(args['var'][0]).upper() == RadarDataProcesor.dBZ[0].upper():
-    radar_variable = RadarDataProcesor.dBZ
-elif str(args['var'][0]).upper() == RadarDataProcesor.RhoHV[0].upper():
-    radar_variable = RadarDataProcesor.RhoHV
-elif str(args['var'][0]).upper() == RadarDataProcesor.ZDR[0].upper():
-    radar_variable = RadarDataProcesor.ZDR
-elif str(args['var'][0]).upper() == RadarDataProcesor.uPhiDP[0].upper():
-    radar_variable = RadarDataProcesor.uPhiDP
+if str(args['var'][0]).upper() == RadarDataProcessor.dBZ[0].upper():
+    radar_variable = RadarDataProcessor.dBZ
+elif str(args['var'][0]).upper() == RadarDataProcessor.RhoHV[0].upper():
+    radar_variable = RadarDataProcessor.RhoHV
+elif str(args['var'][0]).upper() == RadarDataProcessor.ZDR[0].upper():
+    radar_variable = RadarDataProcessor.ZDR
+elif str(args['var'][0]).upper() == RadarDataProcessor.uPhiDP[0].upper():
+    radar_variable = RadarDataProcessor.uPhiDP
 
 out_path = os.path.dirname(os.path.abspath(out_file)) + "/"
 out_file_name = os.path.basename(out_file)
 
 imgType = None
 if (args['img_type'][0].upper() == 'PNG'):
-    imgType = RadarDataProcesor.PNG
+    imgType = RadarDataProcessor.PNG
 else:
-    imgType = RadarDataProcesor.JPEG
+    imgType = RadarDataProcessor.JPEG
 
 try:
     if args['m']:

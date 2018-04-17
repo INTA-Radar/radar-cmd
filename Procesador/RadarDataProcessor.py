@@ -6,10 +6,11 @@ __email__ = "andresgiordano.unlu@gmail.com"
 __status__ = "Produccion"
 
 from pylab import *
-import Image
+from PIL import Image
 import matplotlib.pyplot as plt
 from scipy.stats import linregress
 from geopy.distance import vincenty
+import setuptools
 from matplotlib import colors
 import numpy
 import os.path
@@ -392,13 +393,25 @@ class RainbowRadarProcessor(object):
             raise Exception("El metodo "+method+" no es un metodo valido para obtener la imagen. Posibles: [grid,simple] ")
 
         if (fileOutput != None and pathOutput != None):
-            elevationImg.save(pathOutput + fileOutput+"_elevacion_"+str(elevation) + '.' + imageType)
+            if imageType == JPEG:
+                elevationImg.convert("RGB").save(pathOutput + fileOutput+"_elevacion_"+str(elevation) + '.' + imageType)
+            else:
+                elevationImg.save(pathOutput + fileOutput+"_elevacion_"+str(elevation) + '.' + imageType)
         elif (fileOutput == None and pathOutput != None):
-            elevationImg.save(pathOutput + self.__volFileName + "_elevacion_" + str(elevation) + '.' + imageType)
+            if imageType == JPEG:
+                elevationImg.convert("RGB").save(pathOutput + self.__volFileName + "_elevacion_" + str(elevation) + '.' + imageType)
+            else:
+                elevationImg.save(pathOutput + self.__volFileName + "_elevacion_" + str(elevation) + '.' + imageType)
         elif (fileOutput != None and pathOutput == None):
-            elevationImg.save(self.__volPath + fileOutput + '.' + imageType)
+            if imageType == JPEG:
+                elevationImg.convert("RGB").save(self.__volPath + fileOutput + '.' + imageType)
+            else:
+                elevationImg.save(self.__volPath + fileOutput + '.' + imageType)
         else:
-            elevationImg.save(self.__volPath + self.__volFileName + "_elevacion_" + str(elevation) + '.' + imageType)
+            if imageType == JPEG:
+                elevationImg.convert("RGB").save(self.__volPath + self.__volFileName + "_elevacion_" + str(elevation) + '.' + imageType)
+            else:
+                elevationImg.save(self.__volPath + self.__volFileName + "_elevacion_" + str(elevation) + '.' + imageType)
 
     def getCartesianGrid(self, elevation):
 
@@ -601,7 +614,10 @@ class MosaicGenerator(object):
 
         elevationImg = self.getMosaicImage(elevation=elevation)
 
-        elevationImg.save(pathOutput + fileOutput+"_elevacion_"+str(elevation) + '.' + imageType)
+        if imageType == JPEG:
+            elevationImg.convert("RGB").save(pathOutput + fileOutput+"_elevacion_"+str(elevation) + '.' + imageType)
+        else:
+            elevationImg.save(pathOutput + fileOutput+"_elevacion_"+str(elevation) + '.' + imageType)
 
     def saveToNETCDF(self,elevation,filePath,fileName):
         pyart.io.write_grid(filePath+fileName+"_elevacion_"+str(elevation)+".grib",

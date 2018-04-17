@@ -1,11 +1,14 @@
-import os
 import sys
 sys.path.extend(['../'])
-from Procesador.RadarDataProcesor import RainbowRadar,RainbowRadarProcessor,MosaicGenerator
-import Procesador.RadarDataProcesor as rdp
-import matplotlib.pyplot as plt
+
 import matplotlib.cbook
 import warnings
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+from Procesador.RadarDataProcessor import RainbowRadar,RainbowRadarProcessor,MosaicGenerator
+import Procesador.RadarDataProcessor as rdp
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
 
