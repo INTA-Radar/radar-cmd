@@ -46,9 +46,9 @@ Aplicación de línea de comandos para procesamiento de volumenes utilizando Py-
                         datos obtenidos directamente del radar                      
 
 
-## Instalacion
+## Instalación
 
-Para la instalacion se va a crear un virtualenv con el objetivo de manejar librerias especificas con versiones especificas sin crear conflictos con las ya instaladas.
+Para la instalación se va a crear un virtualenv con el objetivo de manejar librerías especificas con versiones especificas sin crear conflictos con las ya instaladas.
 
     cd ~
     virtualenv --no-site-packages radar_wrap
@@ -57,11 +57,11 @@ Activamos el entorno
 
     source radar_wrap/bin/activate
 
-Actualizamos pip a la ultima version
+Actualizamos pip a la ultima versión
 
     pip install --upgrade pip
 
-Instalamos algunas librerias basicas 
+Instalamos algunas librerías básicas 
 
     pip install matplotlib==2.0.2
     pip install Image
@@ -70,28 +70,28 @@ Instalamos algunas librerias basicas
     pip install geopy
     pip install wradlib==0.9.0
 
-##### GDAL
+#### GDAL
 
-Para instalar la libreria python GDAL es necesario primero instalar la libreria del sistema operativo ```libgdal-dev```. Para ello ejecutamos:
-  
+Para instalar la librería python GDAL es necesario primero instalar la librería del sistema operativo ```libgdal-dev```. Para ello ejecutamos:
+
     sudo apt-get install libgdal-dev
 
-Luego exportamos las rutas a la libreria GDAL de tal manera que la interfaz para python pueda vincularse correctamente al momento de la instalacion:
-    
+Luego exportamos las rutas a la librería GDAL de tal manera que la interfaz para python pueda vincularse correctamente al momento de la instalación:
+ 
     export CPLUS_INCLUDE_PATH=/usr/include/gdal
     export C_INCLUDE_PATH=/usr/include/gdal
-    
-Ahora necesitamos obtener la version instalada de GDAL en el SO para instalar una version compatible de python:     
-    
+ 
+Ahora necesitamos obtener la versión instalada de GDAL en el SO para instalar una versión compatible de python:   
+ 
     GDAL_VERSION="$(gdal-config --version)" 
 
 Finalmente instalamos GDAL para python:
-    
+ 
     pip install GDAL==$GDAL_VERSION
-    
-Si esto no funciona, debemos usar la version inmediata anterior a ```$GDAL_VERSION``` disponible para python. Las versiones disponibles son avisadas por el error anterior.
+ 
+Si esto no funciona, debemos usar la versión inmediata anterior a ```$GDAL_VERSION``` disponible para python. Las versiones disponibles son avisadas por el error anterior.
 
-Ahora clonamos la ultima version disponible de PyART y la instalamos:
+Ahora clonamos la ultima versión disponible de PyART y la instalamos:
 
     cd ~/radar_wrap/
     git clone https://github.com/ARM-DOE/pyart.git
@@ -99,26 +99,26 @@ Ahora clonamos la ultima version disponible de PyART y la instalamos:
     python setup.py build
     sudo python setup.py install
 
-##### Basemap
+#### Basemap
 
-Para instalar la version de basemap (1.0.7) compatible con este proyecto es necesario descargar el paquete desde [Basemap 1.0.7](https://pypi.org/project/basemap/1.0.7/). Luego, descomprimir en la carpeta:
+Para instalar la versión de basemap (1.0.7) compatible con este proyecto es necesario descargar el paquete desde [Basemap 1.0.7](https://pypi.org/project/basemap/1.0.7/). Luego, descomprimir en la carpeta:
 
     ~/radar_wrap/basemap-1.0.7/
-    
-Se requieren las siguientes librerias instaladas en el SO previo a la instalacion de la interfaz para Python:
+ 
+Se requieren las siguientes librerías instaladas en el SO previo a la instalación de la interfaz para Python:
 
-    libgeos-3.4.2                                              - Geometry engine for Geographic Information Systems - C++ Library     
-    libgeos-c1                                                 - Geometry engine for Geographic Information Systems - C Library       
-    libgeos-dev                                                - Geometry engine for GIS - Development files       
+    libgeos-3.4.2   - Geometry engine for Geographic Information Systems - C++ Library   
+    libgeos-c1      - Geometry engine for Geographic Information Systems - C Library   
+    libgeos-dev     - Geometry engine for GIS - Development files   
 
-Los pasos para la instalacion son los siguientes:
+Los pasos para la instalación son los siguientes:
 
     cd ~/radar_wrap/basemap-1.0.7/geos-3.3.3/
     export GEOS_DIR=/usr/local
     ./configure --prefix=$GEOS_DIR
     make; make install 
-     
-Quizas en el ultimo comando sea necesario usar permisos de super-usuario (```sudo```). Luego, instalamos librerias necesarias de Python:
+  
+Quizás en el ultimo comando sea necesario usar permisos de super-usuario (```sudo```). Luego, instalamos librerías necesarias de Python:
 
     pip install numpy
     pip install pyproj
@@ -127,5 +127,3 @@ Quizas en el ultimo comando sea necesario usar permisos de super-usuario (```sud
 Finalmente, instalamos basemap:
 
     python setup.py install
-    
-   
