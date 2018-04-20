@@ -9,8 +9,18 @@ __status__ = "Produccion"
 
 import argparse
 import os
-import RadarDataProcessor
-from RadarDataProcessor import RainbowRadar,RainbowRadarProcessor,MosaicGenerator
+
+import matplotlib.cbook
+import warnings
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+import Procesador.RadarDataProcessor
+from Procesador.RadarDataProcessor import RainbowRadar,RainbowRadarProcessor,MosaicGenerator
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
+
 import sys,traceback
 
 class bcolors:
@@ -26,16 +36,17 @@ def printException(e):
 
 parser = argparse.ArgumentParser(description='Procesamiento de radares.')
 
-parser.add_argument('-f', metavar='--files', type=str, nargs=1, required=True,
-                    help='Archivos de radares .vol')
+parser.add_argument('-f', metavar='--files', type=str, required=True,
+                    help='Archivos de radar a procesar. Si es una carpeta se procesaran '
+                         'todos los archivos dentro de esa carpeta')
 
-parser.add_argument('-o', metavar='--output', type=str, nargs=1, required=True,
+parser.add_argument('-o', metavar='--output', type=str, required=True,
                     help='Archivo de salida.')
 
-parser.add_argument('-ele', metavar='--elevation', type=int, nargs=1, required=True,
+parser.add_argument('-ele', metavar='--elevation', type=int, required=True,
                     help='Numero de elevación (o sweep)')
 
-parser.add_argument('-var', metavar='--variable',choices=['dBZ', 'ZDR','RhoHV','uPhiDP'], type=str, nargs=1, required=True,
+parser.add_argument('-var', metavar='--variable',choices=['dBZ', 'ZDR','RhoHV','uPhiDP'], type=str, required=True,
                     help='Variable del radar a procesar. Posible valores: dBZ, ZDR, RhoHV y uPhiDP' )
 
 parser.add_argument('-m', action='store_true',
@@ -52,10 +63,10 @@ parser.add_argument('-gtif', action='store_true',
 parser.add_argument('-img', action='store_true',
                     help='Indica que se requiere guardar la salida como imagen')
 
-parser.add_argument('-img_type', metavar='--imageType', type=str, choices=['JPEG','PNG'], nargs=1, default='PNG',
+parser.add_argument('-img_type', metavar='--imageType', type=str, choices=['JPEG','PNG'], default='PNG',
                     help='Tipo de imagen de salida. JPEG y PNG son los parametros posibles')
 
-parser.add_argument('-img_method', metavar='--imageMethod', type=str, choices=['grid','simple'], nargs=1, default='grid',
+parser.add_argument('-img_method', metavar='--imageMethod', type=str, choices=['grid','simple'], default='grid',
                     help='Metodo por el cual se genera la imagen de salida (solo para los graficos individuales, NO '
                          'APLICA cuando se genera la imagen de un mosaico). Valores posibles: '
                          '\'grid\' --> a partir de la grilla cartesiana generada, '
@@ -70,14 +81,14 @@ args = vars(parser.parse_args())
 
 files = []
 if 'f' in args:
-    files = args['f'][0].split(',')
+    files = args['f'].split(',')
 
 
 out_file = ''
 if args['o'] != None :
-    out_file = args['o'][0]
+    out_file = args['o']
 
-sweep = args['ele'][0]
+sweep = args['ele']
 
 rainbow_radars = []
 
@@ -88,23 +99,23 @@ for file in files:
     rainbow_radars.append(rr)
 
 radar_variable = None
-if str(args['var'][0]).upper() == RadarDataProcessor.dBZ[0].upper():
-    radar_variable = RadarDataProcessor.dBZ
-elif str(args['var'][0]).upper() == RadarDataProcessor.RhoHV[0].upper():
-    radar_variable = RadarDataProcessor.RhoHV
-elif str(args['var'][0]).upper() == RadarDataProcessor.ZDR[0].upper():
-    radar_variable = RadarDataProcessor.ZDR
-elif str(args['var'][0]).upper() == RadarDataProcessor.uPhiDP[0].upper():
-    radar_variable = RadarDataProcessor.uPhiDP
+if str(args['var']).upper() == Procesador.RadarDataProcessor.dBZ[0].upper():
+    radar_variable = Procesador.RadarDataProcessor.dBZ
+elif str(args['var']).upper() == Procesador.RadarDataProcessor.RhoHV[0].upper():
+    radar_variable = Procesador.RadarDataProcessor.RhoHV
+elif str(args['var']).upper() == Procesador.RadarDataProcessor.ZDR[0].upper():
+    radar_variable = Procesador.RadarDataProcessor.ZDR
+elif str(args['var']).upper() == Procesador.RadarDataProcessor.uPhiDP[0].upper():
+    radar_variable = Procesador.RadarDataProcessor.uPhiDP
 
 out_path = os.path.dirname(os.path.abspath(out_file)) + "/"
 out_file_name = os.path.basename(out_file)
 
 imgType = None
-if (args['img_type'][0].upper() == 'PNG'):
-    imgType = RadarDataProcessor.PNG
+if (args['img_type'].upper() == 'PNG'):
+    imgType = Procesador.RadarDataProcessor.PNG
 else:
-    imgType = RadarDataProcessor.JPEG
+    imgType = Procesador.RadarDataProcessor.JPEG
 
 try:
     if args['m']:
