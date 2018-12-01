@@ -1,4 +1,4 @@
-# radar-cmd
+# radar-cmd (DEPRECATED)
 Aplicación de línea de comandos para procesamiento de volumenes utilizando Py-ART
 
 ## Dependencias
