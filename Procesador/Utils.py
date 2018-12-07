@@ -70,21 +70,21 @@ def getBsp(stopRange, nb):
         return bsp[stopRange][nb]
     else:
         # Obtengo el bsp haciendo una regresion lineal entre X=nb e Y=(nb*bsp)
-        print
-        print 'Obteniendo bsp por regresion lineal. Stoprange =', stopRange, ' nb =', nb
+        print()
+        print('Obteniendo bsp por regresion lineal. Stoprange =', stopRange, ' nb =', nb)
 
-        Y = [y for y in bsp[stopRange].itervalues()]
-        X = [x for x in bsp[stopRange].iterkeys()]
+        Y = [y for y in bsp[stopRange].values()]
+        X = [x for x in bsp[stopRange].keys()]
 
         i = 0
         for y in Y:
-            print y
-            print X[i]
+            print(y)
+            print(X[i])
             Y[i] = y * X[i]
             i += 1
 
-        print 'nb =', X
-        print 'nb*bsp =', Y
+        print('nb =', X)
+        print('nb*bsp =', Y)
         coeffs = linregress(X, Y)
 
         # Si el r-cuad da 0.0 quiere decir que no se pudo generar una regresion lineal.
@@ -93,12 +93,12 @@ def getBsp(stopRange, nb):
         if coeffs[2] == 0.0:
             raise Exception('No se pudo crear una regresion lineal para ' + str(stopRange) + 'km')
 
-        print 'Funcion a usar = ' + str(coeffs[0]) + '*nb+' + str(coeffs[1])
-        print 'Coeficiente de correlacion R-cuad = ', coeffs[2]
-        print 'Bsp = (' + str(coeffs[0]) + '*nb + ' + str(coeffs[1]) + ')/nb'
+        print('Funcion a usar = ' + str(coeffs[0]) + '*nb+' + str(coeffs[1]))
+        print('Coeficiente de correlacion R-cuad = ', coeffs[2])
+        print('Bsp = (' + str(coeffs[0]) + '*nb + ' + str(coeffs[1]) + ')/nb')
         bsp_val = (coeffs[0] * nb + coeffs[1]) / nb
-        print 'Bsp = ', bsp_val
-        print
+        print('Bsp = ', bsp_val)
+        print()
         return bsp_val
 
 

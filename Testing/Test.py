@@ -42,8 +42,8 @@ files_mosaico = {
 #################################################################
 # Simple images
 
-for name,file in files.iteritems():
-    print name,' ; ',file
+for name,file in files.items():
+    print(name,' ; ',file)
     rr = RainbowRadar()
     rr.readRadar('',file[1], radarVariable=file[0])
     p = RainbowRadarProcessor(rainbowRadar=rr)
@@ -62,8 +62,8 @@ for name,file in files.iteritems():
 # Mosaic
 
 radars = []
-for name,file in files_mosaico.iteritems():
-    print name, ' ; ', file
+for name,file in files_mosaico.items():
+    print(name, ' ; ', file)
     radar = RainbowRadar()
     radar.readRadar('',file[1], radarVariable=dBZ)
     # Aplico una mascara a datos menores a 20 y mayores a 40

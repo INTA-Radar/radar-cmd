@@ -1,8 +1,8 @@
-from RainbowRadar import RainbowRadar
+from .RainbowRadar import RainbowRadar
 from geopy.distance import vincenty
 import setuptools
 import pyart.map
-from Utils import getBsp,fig2img,PNG,JPEG
+from .Utils import getBsp,fig2img,PNG,JPEG
 from pyart.graph import common, GridMapDisplay
 import os
 import matplotlib.pyplot as plt
@@ -159,7 +159,7 @@ class MosaicGenerator(object):
                                 vmax=self.__radars[0].getRadarVariable()[4],
                                 cmap=self.__radars[0].getRadarVariable()[2])
             grid_plot.plot_basemap(resolution='h')
-            grid_plot.basemap.readshapefile(os.path.dirname(__file__) + '/DEPARTAMENTOS_2D/departamentos_2d',
+            grid_plot.basemap.readshapefile(os.path.dirname(__file__) + '/departamento/departamento',
                                             'departamentos')
 
             self.__mosaicImages[elevation] = fig2img(plt.gcf())
