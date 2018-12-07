@@ -33,10 +33,10 @@ class bcolors:
     ENDC = '\033[0m'
 
 def printException(e):
-    print bcolors.FAIL+e+bcolors.ENDC
+    print(bcolors.FAIL+e+bcolors.ENDC)
 
 def printWarn(e):
-    print bcolors.WARNING+e+bcolors.ENDC
+    print(bcolors.WARNING+e+bcolors.ENDC)
 
 parser = argparse.ArgumentParser(description='Procesamiento de radares.')
 
@@ -172,7 +172,7 @@ elif args['d'] is not None:
         pre_files = [(dirname(args['d'])+'/',f) for f in listdir(args['d']) if isfile(join(args['d'], f))]
 
 files = getFiles(pre_files)
-print files
+print(files)
 #########################################################################
 ## Obtengo la elevacion a procesar
 
@@ -230,7 +230,7 @@ if args['m'] is not None:
                       basename(file_name)
                       ))
     files = getFiles(pre_files)
-    print files
+    print(files)
     rainbow_radars = []
     for file, radar_variable, file_out in files:
         rr = RainbowRadar()

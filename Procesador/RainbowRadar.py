@@ -5,7 +5,7 @@ __maintainer__ = "Andres Giordano"
 __email__ = "andresgiordano.unlu@gmail.com"
 __status__ = "Produccion"
 
-from Utils import radar_colormap,getBsp
+from .Utils import radar_colormap,getBsp
 
 import wradlib as wrl
 import pyart.aux_io
@@ -113,7 +113,6 @@ class RainbowRadar(object):
 
     def __applyMask(self,swp,copy=True):
         if self.__mask != '':
-            print self.__mask
             a = swp.fields[self.getRadarVariable()[1]]['data']
             ma.masked_where(eval(self.__mask), a,copy=copy)
 

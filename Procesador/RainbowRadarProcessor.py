@@ -16,8 +16,8 @@ import pyart.map
 import pyart.config
 import pyart.io
 
-from RainbowRadar import RainbowRadar
-from Utils import fig2img,PNG,JPEG
+from .RainbowRadar import RainbowRadar
+from .Utils import fig2img,PNG,JPEG
 
 class RainbowRadarProcessor(object):
     """
@@ -95,7 +95,7 @@ class RainbowRadarProcessor(object):
                                                   vmax=self.__rainbowRadar.getRadarVariable()[4],
                                                   cmap=self.__rainbowRadar.getRadarVariable()[2],
                                                   shapefile=os.path.dirname(
-                                                      __file__) + '/DEPARTAMENTOS_2D/departamentos_2d',
+                                                      __file__) + '/departamento/departamento',
                                                   min_lat=min_lat,
                                                   max_lat=max_lat,
                                                   min_lon=min_lon,
@@ -155,8 +155,7 @@ class RainbowRadarProcessor(object):
                     grid_plot.basemap.readshapefile(basemapShapeFile,
                                                     os.path.basename(basemapShapeFile))
                 else:
-                    grid_plot.basemap.readshapefile(os.path.dirname(__file__) + '/DEPARTAMENTOS_2D/departamentos_2d',
-                                                    'departamentos')
+                    grid_plot.basemap.readshapefile(os.path.dirname(__file__) + '/departamento/departamento', 'departamento',default_encoding='LATIN1')
 
                 grid_plot.basemap.fillcontinents(lake_color='aqua',
                                                  alpha=0.2)
