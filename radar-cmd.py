@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from numpy import imag
 
 __author__ = "Andres Giordano"
 __version__ = "2.0"
@@ -9,15 +10,21 @@ __status__ = "Produccion"
 
 import argparse
 from os.path import basename,dirname, join
+import os
 import matplotlib.cbook
 import warnings
 
+os.environ['PYART_QUIET'] = 'True'
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 import Procesador.RainbowRadarProcessor
+from Procesador.Precipitation import Precipitation
 from Procesador.RainbowRadar import RainbowRadar
 from Procesador.RainbowRadarProcessor import RainbowRadarProcessor
 from Procesador.MosaicGenerator import MosaicGenerator
+from argparse import RawTextHelpFormatter
+import re
+auto_var_re = re.compile(r'\d+(\w+)[\.vol|\.azi]', re.IGNORECASE | re.UNICODE)
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
@@ -38,7 +45,7 @@ def printException(e):
 def printWarn(e):
     print(bcolors.WARNING+e+bcolors.ENDC)
 
-parser = argparse.ArgumentParser(description='Procesamiento de radares.')
+parser = argparse.ArgumentParser(description='Procesamiento de radares.', formatter_class=RawTextHelpFormatter)
 
 parser.add_argument('-f', metavar='--files', type=str,
                     help='Archivos de radar a procesar. Pueden ingresarse varios archivos separados por coma.')
@@ -58,17 +65,18 @@ parser.add_argument('-o', metavar='--suffix', type=str,
 parser.add_argument('-ele', metavar='--elevation', type=int, required=True,
                     help='Numero de elevación (sweep)')
 
-parser.add_argument('-var', metavar='--variable',choices=['dBZ', 'ZDR','RhoHV','uPhiDP','auto'], type=str, required=True,
+parser.add_argument('-var', metavar='--variable',choices=['dBZ', 'ZDR','RhoHV','uPhiDP','auto'], type=str, default='auto',
                     help='Variable del radar a procesar. Posibles valores: dBZ, ZDR, RhoHV y uPhiDP. Si utiliza \'auto\' '
                          'será detectado automaticamente para cada archivo')
 
 parser.add_argument('-m', metavar='--mosaic', type=str,
-                    help='Generar mosaico. Se deberan indicar los archivos de entrada separados por \',\' (comas). Ej:'
-                         '-m radar1.vol,radar2.vol,radar3.vol,radarN.vol. Los resultados seran guardados en la carpeta especificada'
-                         ' por -do, en caso que -do no sea ingresado se almacenarán en la carpeta del primer archivo (radar1.vol)')
+                    help='Generar mosaico. Se deberan indicar los archivos de entrada separados por \',\' (comas). \n'
+                         'Ej:\n'
+                         '\t-m radar1.vol,radar2.vol,radar3.vol,radarN.vol.\n\n'
+                         'Los resultados seran guardados en la carpeta especificada por -do, en caso que -do no sea ingresado se almacenarán en la carpeta del primer archivo (radar1.vol)\n')
 
-parser.add_argument('-grid', action='store_true',
-                    help='Guardar la grilla cartesiana en un archivo .grib')
+parser.add_argument('-netCDF', action='store_true',
+                    help='Guardar la grilla cartesiana en un archivo .netCDF')
 
 parser.add_argument('-gtif', action='store_true',
                     help='Generar un archivo georeferenciado .tif')
@@ -81,33 +89,56 @@ parser.add_argument('-img_type', metavar='--imageType', type=str, choices=['JPEG
 
 parser.add_argument('-img_method', metavar='--imageMethod', type=str, choices=['grid','simple'], default='grid',
                     help='Método por el cual se genera la imagen de salida (solo para los graficos individuales, NO '
-                         'APLICA cuando se genera la imagen de un mosaico). Valores posibles: '
-                         '\'grid\' --> a partir de la grilla cartesiana generada, '
-                         '\'simple\' --> datos obtenidos directamente del radar (raw data)')
+                         'APLICA cuando se genera la imagen de un mosaico). \n'
+                         'Valores posibles: \n'
+                         '\'grid\' --> a partir de la grilla cartesiana generada, \n'
+                         '\'simple\' --> datos obtenidos directamente del radar (raw data)\n')
+
+parser.add_argument('-bsp', type=str,default='calculate',
+                    help='Indica el valor de BSP a usar para la generacion de la grilla. Solo tiene efecto cuando'
+                         ' img_method = grid')
+
+parser.add_argument('-ib', action='store_false',
+                    help='Si se indica el parametro se ignora la generacion de mapas de fondo. Para mosaico '
+                         'NO tiene efecto')
+
+parser.add_argument('-rain', action='store_true',
+                    help='Computar el indice de precipitaciones para los volumenes con dBZ disponible.')
+
+parser.add_argument('-img_dpi', metavar='--imageDpi', type=int,default=200,
+                    help='Indica la calidad de imagen a generar. Por defecto es 200.')
 
 parser.add_argument('-mask', metavar='--masked-where', type=str,
-                    help='Aplicar mascara. La mascara ingresada debe respetar el formato de numpy.ma.masked_where.'
+                    help='Aplicar mascara. La mascara ingresada debe respetar el formato de numpy.ma.masked_where.\n'
                          ' La variable a utilizar debe ser siempre \'a\'. Ej.: "(15 <= a) & (a <= 50)"')
+
+parser.add_argument('-v', action='store_true',
+                    help='Verbose')
 
 args = vars(parser.parse_args())
 
 def getVar(file):
-    '''
+    """
     Funcion para detectar la variable. Resuelve de forma automatica o en el caso de haber elegido una variable especifica
     devuelve la variable solo si coincide con la variable que contiene el archivo.
 
     :param file:
     :return:
-    '''
+    """
+
     var = None
-    if Procesador.RainbowRadar.dBZ[0].upper() in str(file).upper():
-        var = Procesador.RainbowRadar.dBZ
-    elif Procesador.RainbowRadar.RhoHV[0].upper() in str(file).upper():
-        var = Procesador.RainbowRadar.RhoHV
-    elif Procesador.RainbowRadar.ZDR[0].upper() in str(file).upper():
-        var = Procesador.RainbowRadar.ZDR
-    elif Procesador.RainbowRadar.uPhiDP[0].upper() in str(file).upper():
-        var = Procesador.RainbowRadar.uPhiDP
+    finds = auto_var_re.findall(file)
+    if len(finds)==1:
+        if Procesador.RainbowRadar.dBZ[0].upper() == finds[0].upper():
+            var = Procesador.RainbowRadar.dBZ
+        elif Procesador.RainbowRadar.RhoHV[0].upper() == finds[0].upper():
+            var = Procesador.RainbowRadar.RhoHV
+        elif Procesador.RainbowRadar.ZDR[0].upper() == finds[0].upper():
+            var = Procesador.RainbowRadar.ZDR
+        elif Procesador.RainbowRadar.uPhiDP[0].upper() == finds[0].upper():
+            var = Procesador.RainbowRadar.uPhiDP
+        elif Procesador.RainbowRadar.V[0].upper() == finds[0].upper():
+            var = Procesador.RainbowRadar.V
 
     if str(args['var']).upper() == 'AUTO':
         if var is not None:
@@ -172,7 +203,19 @@ elif args['d'] is not None:
         pre_files = [(dirname(args['d'])+'/',f) for f in listdir(args['d']) if isfile(join(args['d'], f))]
 
 files = getFiles(pre_files)
-print(files)
+
+formato = '{0:<50}| {1:<20}| {2:<12}| {3:<50}'
+
+if args['v']:
+    print(formato.format('Entrada', 'Productos', 'Variable','Salida'))
+    print('_'*150)
+    for f in files:
+        print(formato.format(f[0], ','.join(['img' if args['img'] else '',
+                                             'netCDF' if args['netCDF'] else '',
+                                             'gtif' if args['gtif'] else ''
+                                             ]), f[1][0], f[2]))
+        print('-' * 150)
+
 #########################################################################
 ## Obtengo la elevacion a procesar
 
@@ -182,7 +225,7 @@ sweep = args['ele']
 ## Obtengo el tipo de imagen a generar
 
 imgType = None
-if (args['img_type'].upper() == 'PNG'):
+if args['img_type'].upper() == 'PNG':
     imgType = Procesador.RainbowRadarProcessor.PNG
 else:
     imgType = Procesador.RainbowRadarProcessor.JPEG
@@ -196,28 +239,45 @@ if args['mask'] is not None:
     mascara = args['mask']
 
 #########################################################################
+## Valor de bsp
+bsp = args['bsp'] if args['bsp'] in ['calculate','default'] else float(args['bsp'])
+
+#########################################################################
 ## Genero los objetos RainbowRadar en base a los archivos
-rainbow_radars = []
+#rainbow_radars = []
 for file,radar_variable,file_out in files:
-    rr = RainbowRadar()
-    rr.readRadar(dirname(file) + "/",basename(file), radarVariable=radar_variable)
+    rr = RainbowRadar(dirname(file) + "/",basename(file), radarVariable=radar_variable)
     rr.setMask(mascara)
-    rainbow_radars.append(rr)
+    #rainbow_radars.append(rr)
+
+    if args['rain']:
+        pp = Precipitation(rr)
+        pp.computePrecipitations(sweep)
+        rr = rainbowRadar=pp.genRainRainbowRadar()
+
     rrp = RainbowRadarProcessor(rr)
 
     if args['img']:
         metodo = ''
 
+        img_params = {'elevation':sweep,
+                      'dpi':args['img_dpi'],
+                      'basemapFlag':args['ib']
+                      }
+
         if args['img_method'] == 'grid':
             metodo = 'grid'
+            if args['bsp'] is not None:
+                img_params.update({'bsp_value': bsp})
+
         elif args['img_method'] == 'simple':
             metodo = 'simple'
 
-        rrp.saveImageToFile(elevation=sweep, pathOutput=dirname(file_out)+'/', fileOutput=basename(file_out), imageType=imgType,
-                            method=metodo)
+        rrp.saveImageToFile(pathOutput=dirname(file_out)+'/', fileOutput=basename(file_out), imageType=imgType,
+                            method=metodo,image_method_params=img_params)
     if args['gtif']:
         rrp.saveToGTiff(sweep, dirname(file_out)+'/', basename(file_out))
-    if args['grid']:
+    if args['netCDF']:
         rrp.saveToNETCDF(sweep, dirname(file_out)+'/', basename(file_out))
 
 
@@ -230,11 +290,10 @@ if args['m'] is not None:
                       basename(file_name)
                       ))
     files = getFiles(pre_files)
-    print(files)
+
     rainbow_radars = []
     for file, radar_variable, file_out in files:
-        rr = RainbowRadar()
-        rr.readRadar(dirname(file) + "/", basename(file), radarVariable=radar_variable)
+        rr = RainbowRadar(dirname(file) + "/", basename(file), radarVariable=radar_variable)
         rr.setMask(mascara)
         rainbow_radars.append(rr)
 
@@ -243,9 +302,32 @@ if args['m'] is not None:
     out_path = dirname(files[0][2]) + '/'
     out_file_name = basename(files[0][2])
 
+    if args['v']:
+        for x in range(len(files)-1):
+            f = files[x]
+            print(formato.format(f[0],
+                                 '',
+                                 f[1][0], ''))
+        f = files[len(files)-1]
+        print(formato.format(f[0],
+                             ','.join(['img' if args['img'] else '',
+                                       'netCDF' if args['netCDF'] else '',
+                                       'gtif' if args['gtif'] else ''
+                                       ]),
+                             f[1][0],
+                             join(out_path,out_file_name)))
+        print('-' * 150)
+
     if args['img']:
-        mg.saveImageToFile(out_path, out_file_name, sweep, imgType)
+        img_params = {'elevation': sweep,
+                      'dpi': args['img_dpi'],
+                      'bsp_value': bsp
+                      }
+        mg.saveImageToFile(out_path, out_file_name, imgType, image_params=img_params)
     if args['gtif']:
-        mg.saveToGTiff(sweep, out_path, out_file_name)
-    if args['grid']:
-        mg.saveToNETCDF(sweep, out_path, out_file_name)
+        mg.saveToGTiff(sweep,
+                       out_path,
+                       out_file_name,
+                       bsp_value=bsp)
+    if args['netCDF']:
+        mg.saveToNETCDF(sweep, out_path, out_file_name,bsp_value=bsp)

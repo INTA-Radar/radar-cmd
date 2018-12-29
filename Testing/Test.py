@@ -1,19 +1,22 @@
-import sys
+# -*- coding: utf-8 -*-
 
-from numpy import pad
+import sys
 
 sys.path.extend(['../'])
 
 import matplotlib.cbook
 import warnings
+import os
 
-
+os.environ['PYART_QUIET'] = 'True'
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 from Procesador.RainbowRadarProcessor import RainbowRadarProcessor
-from Procesador.RainbowRadar import RainbowRadar,ZDR,dBZ,uPhiDP,RhoHV
+from Procesador.RainbowRadar import RainbowRadar,ZDR,dBZ,uPhiDP,RhoHV,V
 from Procesador.MosaicGenerator import MosaicGenerator
 from Procesador.Utils import PNG,JPEG
+from Procesador.Precipitation import Precipitation
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
 
@@ -27,7 +30,9 @@ files = {
 'f_120_uPhiDP'  :   [uPhiDP,'datos/120/2009112306135000uPhiDP.vol'],
 'f_120_dBZ'     :   [dBZ,'datos/120/2009112306135000dBZ.vol'],
 'f_120_ZDR'     :   [ZDR,'datos/120/2009112306135000ZDR.vol'],
-'f_x_dBZ'       :   [dBZ,'datos/2009112306135000dBZ.vol']
+'f_x_dBZ'       :   [dBZ,'datos/2009112306135000dBZ.vol'],
+'f_x_V'       :   [V,'datos/2015080902143600V.vol'],
+'f_400_dBZ'       :   [dBZ,'datos/2018111211413100dBZ.azi']
 }
 
 files_mosaico = {
@@ -37,6 +42,38 @@ files_mosaico = {
 
 }
 
+files_precipitaciones = {
+'f_240_P'       :   [dBZ,'datos/precipitaciones/2009122815300200dBZ.vol']
+}
+
+
+# Precipitaciones
+for name,file in files_precipitaciones.items():
+    print(name,' ; ',file)
+    rr = RainbowRadar('',file[1], radarVariable=file[0])
+    pp = Precipitation(rr)
+    pp.computePrecipitations(0)
+    p = RainbowRadarProcessor(rainbowRadar=pp.genRainRainbowRadar())
+    p.saveImageToFile(imageType=PNG, pathOutput='res/', fileOutput=name,
+                      image_method_params={'elevation': 0,
+                                           'paddingImg': 1}
+                      )
+    p.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput=name)
+
+    p.saveImageToFile(imageType=PNG, pathOutput='res/', fileOutput=name + '_simple',
+                      method='simple',
+                      image_method_params={'elevation': 0,
+                                           'paddingImg': 1}
+                      )
+    p.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput=name + '_simple',
+                      method='simple',
+                      image_method_params={'elevation': 0,
+                                           'paddingImg': 1})
+
+    p.saveToGTiff(elevation=0, outFilePath='res/', outFileName=name)
+    p.saveToNETCDF(elevation=0, outFilePath='res/', outFileName=name)
+
+    #pp.saveImageToFile()
 
 
 #################################################################
@@ -44,15 +81,24 @@ files_mosaico = {
 
 for name,file in files.items():
     print(name,' ; ',file)
-    rr = RainbowRadar()
-    rr.readRadar('',file[1], radarVariable=file[0])
+    rr = RainbowRadar('',file[1], radarVariable=file[0])
     p = RainbowRadarProcessor(rainbowRadar=rr)
 
-    p.saveImageToFile(elevation=0,imageType=PNG,paddingImg=1, pathOutput='res/', fileOutput=name)
-    p.saveImageToFile(elevation=0,imageType=JPEG, pathOutput='res/', fileOutput=name)
+    p.saveImageToFile(imageType=PNG,  pathOutput='res/', fileOutput=name,
+                      image_method_params = {'elevation': 0,
+                                             'paddingImg':1})
 
-    p.saveImageToFile(elevation=0, imageType=PNG, paddingImg=10, pathOutput='res/', fileOutput=name+'_simple', method='simple')
-    p.saveImageToFile(elevation=0, imageType=JPEG, pathOutput='res/', fileOutput=name+'_simple', method='simple')
+    p.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput=name,
+                      image_method_params=  {'elevation': 0,
+                                             'paddingImg': 1})
+
+    p.saveImageToFile(imageType=PNG,pathOutput='res/', fileOutput=name+'_simple', method='simple',
+                      image_method_params=  {'elevation': 0,
+                                             'paddingImg': 1})
+
+    p.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput=name+'_simple', method='simple',
+                      image_method_params=  {'elevation': 0,
+                                             'paddingImg': 1})
 
     p.saveToGTiff(elevation=0, outFilePath='res/',outFileName=name)
     p.saveToNETCDF(elevation=0, outFilePath='res/',outFileName=name)
@@ -61,18 +107,33 @@ for name,file in files.items():
 #################################################################
 # Mosaic
 
+# Con mascara
 radars = []
 for name,file in files_mosaico.items():
     print(name, ' ; ', file)
-    radar = RainbowRadar()
-    radar.readRadar('',file[1], radarVariable=dBZ)
+    radar = RainbowRadar('',file[1], radarVariable=dBZ)
     # Aplico una mascara a datos menores a 20 y mayores a 40
     radar.setMask("(20 > a) | (a > 40)")
     radars.append(radar)
 
 mg = MosaicGenerator(radars=radars)
 
-mg.saveImageToFile(elevation=0,imageType=PNG, pathOutput='res/', fileOutput='mosaico')
-mg.saveImageToFile(elevation=0,imageType=JPEG, pathOutput='res/', fileOutput='mosaico')
+mg.saveImageToFile(imageType=PNG, pathOutput='res/', fileOutput='masked_mosaico',image_params={'elevation':0})
+mg.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput='masked_mosaico',image_params={'elevation':0})
+mg.saveToGTiff(elevation=0, outFilePath='res/',outFileName='masked_mosaico')
+mg.saveToNETCDF(0, 'res/','masked_mosaico')
+
+
+# Sin mascara
+radars = []
+for name,file in files_mosaico.items():
+    print(name, ' ; ', file)
+    radar = RainbowRadar('',file[1], radarVariable=dBZ)
+    radars.append(radar)
+
+mg = MosaicGenerator(radars=radars)
+
+mg.saveImageToFile(imageType=PNG, pathOutput='res/', fileOutput='mosaico',image_params={'elevation':0})
+mg.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput='mosaico',image_params={'elevation':0})
 mg.saveToGTiff(elevation=0, outFilePath='res/',outFileName='mosaico')
 mg.saveToNETCDF(0, 'res/','mosaico')
