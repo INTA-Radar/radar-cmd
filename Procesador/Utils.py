@@ -5,34 +5,6 @@ import matplotlib.colors as colors
 import numpy as np
 from PIL import Image
 
-# bsp = { 'stoprange': { 'degrees':'bsp'}}
-bsp = {120: {0.5: 2,
-             1.3: 1.3,
-             2.3: 1.1,
-             3.5: 1.05,
-             5: 1.02,
-             6.9: 1,
-             9.1: 0.99,
-             11.8: 0.9769,
-             15.1: 0.9729,
-             19.2: 0.97},
-       240: {0.5: 2.56,
-             0.9: 1.85,
-             1.3: 1.58,
-             1.9: 1.36,
-             2.3: 1.285,
-             3: 1.2,
-             3.5: 1.165,
-             5: 1.1,
-             6.9: 1.06,
-             9.1: 1.035,
-             11.8: 1.015,
-             15.1: 1.004,
-             19.2: 1},
-       400: {0.3: 5.2},
-       480: {0.3: 6.3}
-       }
-
 PNG = 'png'
 JPEG = 'jpeg'
 
@@ -67,43 +39,6 @@ def radar_colormap():
 
     cmap = colors.ListedColormap(nws_reflectivity_colors)
     return cmap
-
-def getBsp(stopRange, nb):
-    if nb in bsp[stopRange]:
-        return bsp[stopRange][nb]
-    else:
-        # Obtengo el bsp haciendo una regresion lineal entre X=nb e Y=(nb*bsp)
-        print()
-        print('Obteniendo bsp por regresion lineal. Stoprange =', stopRange, ' nb =', nb)
-
-        Y = [y for y in bsp[stopRange].values()]
-        X = [x for x in bsp[stopRange].keys()]
-
-        i = 0
-        for y in Y:
-            print(y)
-            print(X[i])
-            Y[i] = y * X[i]
-            i += 1
-
-        print('nb =', X)
-        print('nb*bsp =', Y)
-        coeffs = linregress(X, Y)
-
-        # Si el r-cuad da 0.0 quiere decir que no se pudo generar una regresion lineal.
-        # Esto pasa cuando existe un unico punto.
-
-        if coeffs[2] == 0.0:
-            raise Exception('No se pudo crear una regresion lineal para ' + str(stopRange) + 'km')
-
-        print('Funcion a usar = ' + str(coeffs[0]) + '*nb+' + str(coeffs[1]))
-        print('Coeficiente de correlacion R-cuad = ', coeffs[2])
-        print('Bsp = (' + str(coeffs[0]) + '*nb + ' + str(coeffs[1]) + ')/nb')
-        bsp_val = (coeffs[0] * nb + coeffs[1]) / nb
-        print('Bsp = ', bsp_val)
-        print()
-        return bsp_val
-
 
 def fig2data(fig):
     """

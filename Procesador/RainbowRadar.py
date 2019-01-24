@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
+
 __author__ = "Andres Giordano"
 __version__ = "1.0"
 __maintainer__ = "Andres Giordano"
 __email__ = "andresgiordano.unlu@gmail.com"
 __status__ = "Produccion"
 
-from .Utils import getBsp
-
 import wradlib as wrl
 import pyart.aux_io
 import numpy.ma as ma
+
 #var_name = (var_id, pyart_variable, cmap, vmin, vmax, colorbar_label)
 dBZ = ('dBZ', 'reflectivity', pyart.config.get_field_colormap('reflectivity'), -30, 70, 'Reflectivity') # Pasado a pyart_NWSRef en base a actualizacion Diciembre 2018
 V = ('V', 'velocity', pyart.config.get_field_colormap('velocity'), None, None,'Velocidad Doppler')
@@ -25,11 +25,11 @@ class RainbowRadar(object):
 
     def __init__(self, vol_file_path, vol_file_name, radarVariable=dBZ, radar = None):
 
-        self.__elevationCartesianGrids = {}
         self.__mask = ''
         self.__radarVariable = None
         self.__filePath = vol_file_path
         self.__fileName = vol_file_name
+        self.__grid = None
 
         if radar is None:
             self.__radar = pyart.aux_io.read_rainbow_wrl(self.__filePath + self.__fileName)
@@ -65,7 +65,6 @@ class RainbowRadar(object):
 
     def getSweep(self, n):
         swp = self.__radar.extract_sweeps([n])
-        self.__applyMask(swp)
         return swp
 
     def getNSweeps(self):
@@ -80,67 +79,69 @@ class RainbowRadar(object):
     def getStopRange(self):
         return self.__stopRange
 
-    def getCartesianGrid(self, elevation, _bsp = 'calculate'):
+    def getCartesianGrid(self):
 
-        if not elevation in self.__elevationCartesianGrids:
+        if self.__grid is None:
 
-            ele = self.getSweep(elevation)
             metros = 1000.0
 
-            if _bsp == 'calculate':
-                _bsp = getBsp(self.__stopRange, ele.fixed_angle['data'][0])
-            elif _bsp == 'default':
-                _bsp = 1.0
-            elif type(_bsp) != float:
-                raise Exception('Los valores posibles de BSP son \'calculate\', \'default\' o un float indicando el valor.')
-
-
-            self.__elevationCartesianGrids[elevation] = pyart.map.grid_from_radars(
-                (ele,),
-                grid_shape=(1, 480, 480),
-                grid_limits=((200, 4 * metros), (-self.__stopRange * metros, self.__stopRange * metros),
+            z = 29
+            self.__grid = pyart.map.grid_from_radars(
+                (self.__radar,),
+                grid_shape=(z, 480, 480),
+                grid_limits=((0, z * metros), (-self.__stopRange * metros, self.__stopRange * metros),
                              (-self.__stopRange * metros, self.__stopRange * metros)),
-                weighting_function='Cressman',
+                #weighting_function='Cressman',
                 fields=[self.__radarVariable[1]],
-
-                nb=ele.fixed_angle['data'][0],
-                bsp=_bsp,
-
-                roi_func='dist_beam',
-
-                # Posición del RADAR
-                grid_origin=(ele.latitude['data'][0], ele.longitude['data'][0])
+                min_radius=1100,
+                grid_origin=(self.getLatitude(), self.getLongitude())
 
             )
 
-        return self.__elevationCartesianGrids[elevation]
+        return self.__grid
 
-    def getMaxLat(self,elevation):
-        return self.getCartesianGrid(elevation).point_latitude['data'][0].max()
+    def getMaxLat(self):
+        return self.getCartesianGrid().point_latitude['data'][0].max()
 
-    def getMinLat(self, elevation):
-        return self.getCartesianGrid(elevation).point_latitude['data'][0].min()
+    def getMinLat(self):
+        return self.getCartesianGrid().point_latitude['data'][0].min()
 
-    def getMaxLon(self,elevation):
-        return self.getCartesianGrid(elevation).point_longitude['data'][0].max()
+    def getMaxLon(self):
+        return self.getCartesianGrid().point_longitude['data'][0].max()
 
-    def getMinLon(self, elevation):
-        return self.getCartesianGrid(elevation).point_longitude['data'][0].min()
+    def getMinLon(self):
+        return self.getCartesianGrid().point_longitude['data'][0].min()
 
-    def setMask(self,maskString):
-        self.__mask = maskString
-
-    def __applyMask(self,swp):
+    def setMask(self,maskString,dst='grid', level=None):
         """
-        Aplica la mascara establecida para el objeto radar. Se usa antes de devolver una elevacion especifica
-        con :func:`~getSweep`.
+        Aplica una mascara a los datos del radar o la grilla generada.
 
-        :param swp: objeto radar al cual se le aplica la mascara.
-        :type swp: pyart.core.Radar
+        :param maskString: string que indica la mascara. Debe respetar el formato de numpy
+        :param dst: destino de la mascara. Si se elige 'grid' se aplica a la grilla, 'raw' aplica directo
+        sobre los datos originales del radar, en este ultimo caso tener en cuenta que luego si se hace el grillado
+        habra datos que no estarán disponibles (a los que se le aplico la mascara)
+        :param level: nivel a donde se aplica la mascara, si es None se aplica a todos los niveles de la grilla.
+
         """
-        if self.__mask != '':
-            a = swp.fields[self.getRadarVariable()[1]]['data']
-            ma.masked_where(eval(self.__mask), a,copy=False)
+        if maskString != '':
+
+            if dst == 'grid':
+                if self.__grid is not None:
+                    if level is not None:
+                        a = self.__grid.fields[self.getRadarVariable()[1]]['data'][level]
+                        ma.masked_where(eval(maskString), a, copy=False)
+                    else:
+                        for x in range(len(self.__grid.fields[self.getRadarVariable()[1]]['data'])):
+                            a = self.__grid.fields[self.getRadarVariable()[1]]['data'][x]
+                            ma.masked_where(eval(maskString), a, copy=False)
+                else:
+                    raise Exception('La grilla aun no ha sido creada')
+            elif dst == 'raw':
+                a = self.__radar.fields[self.getRadarVariable()[1]]['data']
+                ma.masked_where(eval(maskString), a, copy=False)
+            else:
+                raise Exception('Opcion no reconocida')
+
 
     def getLatitude(self):
         return self.__radar.latitude['data'][0]

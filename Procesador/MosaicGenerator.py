@@ -5,24 +5,24 @@ from geopy.distance import vincenty
 from geopy.units import degrees,nautical
 import setuptools
 import pyart.map
-from .Utils import getBsp,fig2img,PNG,JPEG,gen_ticks
+from .Utils import fig2img,PNG,JPEG,gen_ticks
 from pyart.graph import common, GridMapDisplay
 import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import numpy.ma as ma
 
 class MosaicGenerator(object):
-    """
 
-    """
     def __init__(self, radars=None):
-        '''
+        """
 
         :param radars: list of RainbowRadar
         :type radars: list of RainbowRadar
-        '''
+        """
+
         self.__radars = []
-        self.__mosaicGrids = {}
+        self.__grid = None
         self.__mosaicImages = {}
 
         # Ajuste de la grilla en KM
@@ -73,41 +73,41 @@ class MosaicGenerator(object):
 
         return points
 
-    def __getMaxLonPoint(self, elevation):
+    def __getMaxLonPoint(self):
         res = None
         for radar in self.__radars:
-            if res is None or res < radar.getMaxLon(elevation):
-                res = radar.getMaxLon(elevation)
+            if res is None or res < radar.getMaxLon():
+                res = radar.getMaxLon()
 
         return self.__getCenterCoordinates()[0], res
 
-    def __getMinLonPoint(self, elevation):
+    def __getMinLonPoint(self):
         res = None
         for radar in self.__radars:
-            if res is None or res > radar.getMinLon(elevation):
-                res = radar.getMinLon(elevation)
+            if res is None or res > radar.getMinLon():
+                res = radar.getMinLon()
 
         return self.__getCenterCoordinates()[0], res
 
-    def __getMinLatPoint(self, elevation):
+    def __getMinLatPoint(self):
         res = None
         for radar in self.__radars:
-            if res is None or res > radar.getMinLat(elevation):
-                res = radar.getMinLat(elevation)
+            if res is None or res > radar.getMinLat():
+                res = radar.getMinLat()
 
         return res, self.__getCenterCoordinates()[1]
 
-    def __getMaxLatPoint(self, elevation):
+    def __getMaxLatPoint(self):
         res = None
         for radar in self.__radars:
-            if res is None or res < radar.getMaxLat(elevation):
-                res = radar.getMaxLat(elevation)
+            if res is None or res < radar.getMaxLat():
+                res = radar.getMaxLat()
 
         return res, self.__getCenterCoordinates()[1]
 
-    def getMosaicGrid(self, elevation=0, _bsp='calculate'):
+    def getMosaicGrid(self):
 
-        if elevation not in self.__mosaicGrids:
+        if self.__grid is None:
 
             # Verificamos que se haya cargado  al menos dos radares
             if len(self.__radars) <= 1:
@@ -127,10 +127,10 @@ class MosaicGenerator(object):
             elipse = 'WGS-84'
             center_point = self.__getCenterCoordinates()
 
-            distances = [   vincenty(center_point, self.__getMinLatPoint(elevation), ellipsoid=elipse).meters,
-                            vincenty(center_point, self.__getMaxLatPoint(elevation), ellipsoid=elipse).meters,
-                            vincenty(center_point, self.__getMinLonPoint(elevation), ellipsoid=elipse).meters,
-                            vincenty(center_point, self.__getMaxLonPoint(elevation), ellipsoid=elipse).meters]
+            distances = [   vincenty(center_point, self.__getMinLatPoint(), ellipsoid=elipse).meters,
+                            vincenty(center_point, self.__getMaxLatPoint(), ellipsoid=elipse).meters,
+                            vincenty(center_point, self.__getMinLonPoint(), ellipsoid=elipse).meters,
+                            vincenty(center_point, self.__getMaxLonPoint(), ellipsoid=elipse).meters]
 
             # Obtengo la maxima distancia
             meters = 1000
@@ -142,44 +142,49 @@ class MosaicGenerator(object):
 
 
             # Obtengo los sweeps en base a la elevacion
-            radar_sweeps = []
+            all_radars = []
             for radar in self.__radars:
-                radar_sweeps.append(radar.getSweep(elevation))
-
-            if _bsp == 'calculate':
-                _bsp = getBsp(stopRange, radar_sweeps[0].fixed_angle['data'][0])
-            elif _bsp == 'default':
-                _bsp = 1.0
-            elif type(_bsp) != float:
-                raise Exception('Los valores posibles de BSP son \'calculate\', \'default\' o un float indicando el valor.')
+                all_radars.append(radar.getRadar())
 
             # Ahora genero la grilla en base a los datos anteriores:
-            grid = pyart.map.grid_from_radars(
-                tuple(radar_sweeps),
-                grid_shape=(1, 480 * len(self.__radars), 480 * len(self.__radars)),
+            z = 29
+            self.__grid = pyart.map.grid_from_radars(
+                tuple(all_radars),
+                grid_shape=(z, 480 * len(self.__radars), 480 * len(self.__radars)),
                 grid_limits=(
-                    (200, 4 * meters),
+                    (0, z * meters),
                     (-limit_min_lat, limit_max_lat),
                     (-limit_min_lon, limit_max_lon)
                 ),
-                nb=radar_sweeps[0].fixed_angle['data'][0],
-                bsp=_bsp,
+                weighting_function='Cressman', # Segun Jian Zhang "THREE-DIMENSIONAL GRIDDING AND MOSAIC OF REFLECTIVITIES FROM MULTIPLE WSR-88D RADARS" se prefiere usar esta funcion para mosaico
                 grid_origin=center_point,
                 fields=[self.__radars[0].getRadarVariable()[1]]
             )
 
-            self.__mosaicGrids[elevation] = grid
+        return self.__grid
 
-        return self.__mosaicGrids[elevation]
+    def setMask(self, mask, level=0):
+        if mask != '':
+            if self.__grid is not None:
+                if level is not None:
+                    a = self.__grid.fields[self.__radars[0].getRadarVariable()[1]]['data'][level]
+                    ma.masked_where(eval(mask), a, copy=False)
+                else:
+                    for x in range(len(self.__grid.fields[self.__radars[0].getRadarVariable()[1]]['data'])):
+                        a = self.__grid.fields[self.__radars[0].getRadarVariable()[1]]['data'][x]
+                        ma.masked_where(eval(mask), a, copy=False)
+            else:
+                raise Exception('La grilla aun no ha sido creada')
 
-    def getMosaicImage(self, elevation=0, figsize=(20, 20), dpi=200, font=None, bsp_value = 'calculate'):
+    def getMosaicImage(self, level=0, mask=None, figsize=(20, 20), dpi=200, font=None):
         """
+        Genera un mosaico con los radares que componen la instancia y luego crea un grafico CAPPI de la elevacion indicada.
 
-        :param elevation:
+        :param level: nivel de la grilla a graficar.
+        :param mask: mascara a aplicar a la grilla del mosaico.
         :param figsize: tamaño de la figura a generar
         :param dpi: calidad de la imagen a generar.
         :param font: configuracion de las fuentes del grafico --> ``Matplotlib.rc('font', **font)``. Por defecto:  ``{'family': 'sans-serif', 'size': 35}``.
-        :param bsp_value: valor de BSP a usar en :func:`~MosaicGenerator.getMosaicGrid`
         :return:
         """
         plt.clf()
@@ -192,21 +197,28 @@ class MosaicGenerator(object):
         fig = plt.figure(figsize=figsize, dpi=dpi)
         fig.add_subplot(1, 1, 1, aspect=1.0)
 
-        grid = self.getMosaicGrid(elevation,_bsp=bsp_value)
+        grilla = self.getMosaicGrid()
 
-        titulo = common.generate_title(self.__radars[0].getRadar(), self.__radars[0].getRadarVariable()[1], elevation,
-                                            datetime_format = '%d-%m-%Y %M:%S')
+        if mask is not None:
+            self.setMask(mask,level=level)
 
+        time_str = common.generate_grid_time_begin(grilla).strftime('%d-%m-%Y %M:%S')
+        height = grilla.z['data'][level] / 1000.
+        l1 = "%s %.1f km %s " % (common.generate_grid_name(grilla), height,
+                                 time_str)
+        field_name = common.generate_field_name(grilla, self.__radars[0].getRadarVariable()[1])
+        titulo = l1 + '\n' + field_name
 
-
-        grid_plot = GridMapDisplay(grid)
+        grid_plot = GridMapDisplay(grilla)
         grid_plot.plot_grid(self.__radars[0].getRadarVariable()[1],
                             colorbar_label=self.__radars[0].getRadarVariable()[0],
                             title=titulo,
                             title_flag=True,
                             vmin=self.__radars[0].getRadarVariable()[3],
                             vmax=self.__radars[0].getRadarVariable()[4],
-                            cmap=self.__radars[0].getRadarVariable()[2])
+                            cmap=self.__radars[0].getRadarVariable()[2],
+                            level=level
+                            )
         grid_plot.plot_basemap(resolution='h')
         grid_plot.basemap.readshapefile(os.path.dirname(__file__) + '/departamento/departamento',
                                         'departamentos')
@@ -216,11 +228,11 @@ class MosaicGenerator(object):
         d_correc = degrees(arcminutes=nautical(kilometers=self.__grid_adjust))
 
         lat_ticks = gen_ticks(center_point[0],
-                              self.__getMinLatPoint(elevation)[0]-d_correc,
-                              self.__getMaxLatPoint(elevation)[0]+d_correc)
+                              self.__getMinLatPoint()[0]-d_correc,
+                              self.__getMaxLatPoint()[0]+d_correc)
         lon_ticks = gen_ticks(center_point[1],
-                              self.__getMinLonPoint(elevation)[1]-d_correc,
-                              self.__getMaxLonPoint(elevation)[1]+d_correc)
+                              self.__getMinLonPoint()[1]-d_correc,
+                              self.__getMaxLonPoint()[1]+d_correc)
 
         grid_plot.basemap.drawparallels(lat_ticks, labels=[1, 0, 0, 0], labelstyle='+/-',
                                         fmt='%.2f', linewidth=0, rotation=45)
@@ -242,7 +254,7 @@ class MosaicGenerator(object):
         :param image_params: diccionario con los parametros a pasar a la funcion que genera el grafico de radar :func:`~MosaicGenerator.getMosaicImage`
         :return:
         """
-        _image_params = {'elevation': 0}
+        _image_params = {'level': 0}
 
         if image_params is not None:
             _image_params.update(image_params)
@@ -250,21 +262,26 @@ class MosaicGenerator(object):
         elevationImg = self.getMosaicImage(**_image_params)
 
         if imageType == JPEG:
-            elevationImg.convert("RGB").save(pathOutput + fileOutput + "_elevacion_" + str(_image_params['elevation']) + '.' + imageType)
+            elevationImg.convert("RGB").save(pathOutput + fileOutput + "_nivel_" + str(_image_params['level']) + '.' + imageType)
         else:
-            elevationImg.save(pathOutput + fileOutput + "_elevacion_" + str(_image_params['elevation']) + '.' + imageType)
+            elevationImg.save(pathOutput + fileOutput + "_nivel_" + str(_image_params['level']) + '.' + imageType)
 
-    def saveToNETCDF(self, elevation, filePath, fileName,bsp_value='calculate'):
-        pyart.io.write_grid(filePath + fileName + "_elevacion_" + str(elevation) + ".grib",
-                            self.getMosaicGrid(elevation, _bsp=bsp_value),
+    def saveToNETCDF(self, filePath, fileName):
+        pyart.io.write_grid(filePath + fileName + ".netCDF",
+                            self.getMosaicGrid(),
                             format='NETCDF3_64BIT',
                             arm_time_variables=True)
 
-    def saveToGTiff(self, elevation, outFilePath, outFileName,bsp_value='calculate'):
+    def saveToGTiff(self, level, outFilePath, outFileName):
 
-        grid = self.getMosaicGrid(elevation,_bsp=bsp_value)
-
-        pyart.io.write_grid_geotiff(grid, filename=outFilePath + outFileName
-                                                   + "_elevacion_" + str(elevation) + ".tif",
+        pyart.io.write_grid_geotiff(self.getMosaicGrid(),
+                                    filename=outFilePath + outFileName
+                                                   + "_nivel_" + str(level) + ".tif",
                                     field=self.__radars[0].getRadarVariable()[1],
-                                    warp=False)
+                                    level=level,
+                                    rgb=True,
+                                    cmap=self.__radars[0].getRadarVariable()[2],
+                                    vmin=self.__radars[0].getRadarVariable()[3],
+                                    vmax=self.__radars[0].getRadarVariable()[4],
+                                    warp=True
+                                    )

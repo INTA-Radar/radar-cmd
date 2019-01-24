@@ -10,47 +10,47 @@ Aplicación de línea de comandos para procesamiento de volumenes utilizando Py-
  
 ## Modo de uso
 
-    usage: radar-cmd.py [-h] [-f --files] [-d --directory] [-R] [-do --dir-output]
-                    [-o --suffix] -ele --elevation [-var --variable]
-                    [-m --mosaic] [-netCDF] [-gtif] [-img]
-                    [-img_type --imageType] [-img_method --imageMethod]
-                    [-bsp BSP] [-ib] [-rain] [-img_dpi --imageDpi]
-                    [-mask --masked-where] [-v]
+    usage: radar-cmd.py [-h] [-f F] [-pf PF] [-d D] [-R] [-do DO] [-o O]
+                    [-var {dBZ,ZDR,RhoHV,uPhiDP,auto}] [-m] [-netCDF] [-gtif]
+                    [-img] [-img_type {JPEG,PNG}] [-img_method {grid,simple}]
+                    [-ele ELE] [-level LEVEL] [-ib] [-rain] [-img_dpi IMG_DPI]
+                    [-mask MASK] [-v]
 
     Procesamiento de radares.
     
     optional arguments:
       -h, --help            show this help message and exit
-      -f --files            Archivos de radar a procesar. Pueden ingresarse varios archivos separados por coma.
-      -d --directory        Directorio de archivos a procesar. Se procesa cada archivo de forma individual.
-      -R                    Recorre el directorio de forma recursiva
-      -do --dir-output      Carpeta donde se almacenarán los resultados. Por defecto será la misma carpeta del archivo
-      -o --suffix           Sufijo del nombre del archivo de salida.
-      -ele --elevation      Numero de elevación (sweep)
-      -var --variable       Variable del radar a procesar. Posibles valores: dBZ, ZDR, RhoHV y uPhiDP. Si utiliza 'auto' será detectado automaticamente para cada archivo
-      -m --mosaic           Generar mosaico. Se deberan indicar los archivos de entrada separados por ',' (comas). 
+      -f F                  Archivos de radar a procesar. Pueden ingresarse varios archivos separados por coma, esto es necesario para la generacion del mosaico.
                             Ej:
                                     -m radar1.vol,radar2.vol,radar3.vol,radarN.vol.
                             
+      -pf PF                Archivo yml con parametros para la generacion del producto. Es una alternativa a pasar los parametros por linea de comandos. Los parametros que se indiquen en el archivo sobreescriben a los establecidos por linea de comandos
+      -d D                  Directorio de archivos a procesar. Se procesa cada archivo de forma individual.
+      -R                    Recorre el directorio de forma recursiva
+      -do DO                Carpeta donde se almacenarán los resultados. Por defecto será la misma carpeta del archivo
+      -o O                  Sufijo del nombre del archivo de salida.
+      -var {dBZ,ZDR,RhoHV,uPhiDP,auto}
+                            Variable del radar a procesar. Posibles valores: dBZ, ZDR, RhoHV y uPhiDP. Si utiliza 'auto' será detectado automaticamente para cada archivo
+      -m                    Generar mosaico. Se toman los archivos indicados en el parametro -f. 
                             Los resultados seran guardados en la carpeta especificada por -do, en caso que -do no sea ingresado se almacenarán en la carpeta del primer archivo (radar1.vol)
       -netCDF               Guardar la grilla cartesiana en un archivo .netCDF
       -gtif                 Generar un archivo georeferenciado .tif
       -img                  Guardar la salida como imagen
-      -img_type --imageType
-                            Tipo de imagen de salida. JPEG y PNG son los parametros posibles
-      -img_method --imageMethod
+      -img_type {JPEG,PNG}  Tipo de imagen de salida. JPEG y PNG son los parametros posibles
+      -img_method {grid,simple}
                             Método por el cual se genera la imagen de salida (solo para los graficos individuales, NO APLICA cuando se genera la imagen de un mosaico). 
                             Valores posibles: 
-                            'grid' --> a partir de la grilla cartesiana generada, 
-                            'simple' --> datos obtenidos directamente del radar (raw data)
-      -bsp BSP              Indica el valor de BSP a usar para la generacion de la grilla. Solo tiene efecto cuando img_method = grid
+                            'grid' --> a partir de la grilla cartesiana generada con todas las elevaciones.
+                            'simple' --> datos de una sola elevacion.
+      -ele ELE              Numero de elevación (sweep). Requerido solo en caso de -img_method=simple
+      -level LEVEL          Nivel de la grilla. Requerido solo en caso de -img_method=grid
       -ib                   Si se indica el parametro se ignora la generacion de mapas de fondo. Para mosaico NO tiene efecto
       -rain                 Computar el indice de precipitaciones para los volumenes con dBZ disponible.
-      -img_dpi --imageDpi   Indica la calidad de imagen a generar. Por defecto es 200.
-      -mask --masked-where  Aplicar mascara. La mascara ingresada debe respetar el formato de numpy.ma.masked_where.
+      -img_dpi IMG_DPI      Indica la calidad de imagen a generar. Por defecto es 200.
+      -mask MASK            Aplicar mascara. La mascara ingresada debe respetar el formato de numpy.ma.masked_where.
                              La variable a utilizar debe ser siempre 'a'. Ej.: "(15 <= a) & (a <= 50)"
       -v                    Verbose
-                    
+                
 ## Instalación
 
 Para instalar esta herramienta ver páginas en la wiki:

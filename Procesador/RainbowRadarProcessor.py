@@ -40,14 +40,15 @@ class RainbowRadarProcessor(object):
         self.__volFileName = self.__rainbowRadar.getFileName()
         self.__RADAR_FILE_OUT = self.__volPath + self.__volFileName + "_ppi.grib"
 
-    def getRawDataImage(self, elevation, figsize=(25, 25), paddingImg=1, basemapFlag=True, basemapShapeFile=None,
-                        dpi=200, font=None):
+    def getPPIImage(self, elevation, mask=None, figsize=(25, 25), paddingImg=1, basemapFlag=True, basemapShapeFile=None,
+                    dpi=200, font=None):
         """
         Este metodo retorna la imagen bidimensional del retorno radarico segun
         el numero de elevacion que se pase por parametro.
 
         :param elevation: indica el numero de elevacion a obtener.
         :type elevation: int
+        :param mask: mascara a aplicar a los datos de radar.
         :param figsize: es una tupla que indica el tamaño de la imagen a generar
         :type figsize: tuple of int
         :param paddingImg: se usa para agregarle padding a la imagen del radar.
@@ -70,6 +71,10 @@ class RainbowRadarProcessor(object):
 
         mpl.rc('font', **font)
 
+        # Aplico mascara a los datos del radar antes de obtener la elevacion
+        if mask is not None:
+            self.__rainbowRadar.setMask(maskString=mask, dst='raw')
+
         eleN = self.__rainbowRadar.getSweep(elevation)
 
         display_variable = RadarDisplay(eleN)
@@ -78,18 +83,18 @@ class RainbowRadarProcessor(object):
         fig.add_subplot(1, 1, 1, aspect=1.0)
         rango_anillos = self.__rainbowRadar.getStopRange() / 4
         anillos = [rango_anillos, rango_anillos * 2, rango_anillos * 3, self.__rainbowRadar.getStopRange()]
-        min_lat = self.__rainbowRadar.getMinLat(elevation) - paddingImg
-        max_lat = self.__rainbowRadar.getMaxLat(elevation) + paddingImg
-        min_lon = self.__rainbowRadar.getMinLon(elevation) - paddingImg
-        max_lon = self.__rainbowRadar.getMaxLon(elevation) + paddingImg
+
+        # Obtengo longitud, latitud minima y maxima a partir de la grilla, y le agrego el padding
+        min_lat = self.__rainbowRadar.getMinLat() - paddingImg
+        max_lat = self.__rainbowRadar.getMaxLat() + paddingImg
+        min_lon = self.__rainbowRadar.getMinLon() - paddingImg
+        max_lon = self.__rainbowRadar.getMaxLon() + paddingImg
 
         titulo = common.generate_title(self.__rainbowRadar.getRadar(), self.__rainbowRadar.getRadarVariable()[1],
                                        elevation, datetime_format='%d-%m-%Y %M:%S')
 
         if basemapFlag:
             display_variable = RadarMapDisplay(eleN)
-            # Obtengo longitud, latitud minima y maxima a partir de la grilla, y le agrego el padding
-
 
             # Si hay un shapefile elegido por el usuario se toma ese, en otro caso se toma el shapefile por defecto
             if basemapShapeFile is not None:
@@ -159,14 +164,13 @@ class RainbowRadarProcessor(object):
 
         return res
 
-    def getImageFromCartesianGrid(self, elevation, bsp_value = 'calculate', figsize=(25, 25), paddingImg=1, basemapFlag=True,
-                                  basemapShapeFile=None, dpi=200, font=None):
+    def getCAPPIImage(self, level, mask=None, figsize=(25, 25), paddingImg=1, basemapFlag=True,
+                      basemapShapeFile=None, dpi=200, font=None):
         """
         Genera la imagen del radar desde la grilla.
 
-        :param elevation: elevacion
-        :param bsp_value: valor de BSP a usar en la generacion de la grilla.
-        :type bsp_value: float
+        :param level: nivel de la grilla a graficar. Ej. : 3 --> 2km < altitud <= 3 km
+        :param mask: mascara a aplicar a al nivel de la grilla una vez generada.
         :param figsize:
         :param paddingImg:
         :param basemapFlag:
@@ -183,23 +187,35 @@ class RainbowRadarProcessor(object):
 
         mpl.rc('font', **font)
 
-        grilla = self.__rainbowRadar.getCartesianGrid(elevation, _bsp= bsp_value)
+        grilla = self.__rainbowRadar.getCartesianGrid()
+
+        # Aplico mascara
+        if mask is not None:
+            self.__rainbowRadar.setMask(mask, level=level)
 
         # create the plot
         fig = plt.figure(figsize=figsize,dpi=dpi)
         ax = fig.add_subplot(111)
-        titulo = common.generate_title(self.__rainbowRadar.getRadar(), self.__rainbowRadar.getRadarVariable()[1], elevation, datetime_format='%d-%m-%Y %M:%S')
+
+        ############################################################################
+        # TITULO
+        time_str = common.generate_grid_time_begin(grilla).strftime('%d-%m-%Y %M:%S')
+        height = grilla.z['data'][level] / 1000.
+        l1 = "%s %.1f km %s " % (common.generate_grid_name(grilla), height,
+                                 time_str)
+        field_name = common.generate_field_name(grilla, self.__rainbowRadar.getRadarVariable()[1])
+        titulo = l1 + '\n' + field_name
+        ############################################################################
 
         if basemapFlag:
             # Se genera el grafico con el mapa debajo
             grid_plot = GridMapDisplay(grilla)
-            min_lat = self.__rainbowRadar.getMinLat(elevation) - paddingImg
-            max_lat = self.__rainbowRadar.getMaxLat(elevation) + paddingImg
-            min_lon = self.__rainbowRadar.getMinLon(elevation) - paddingImg
-            max_lon = self.__rainbowRadar.getMaxLon(elevation) + paddingImg
+            min_lat = self.__rainbowRadar.getMinLat() - paddingImg
+            max_lat = self.__rainbowRadar.getMaxLat() + paddingImg
+            min_lon = self.__rainbowRadar.getMinLon() - paddingImg
+            max_lon = self.__rainbowRadar.getMaxLon() + paddingImg
 
-            grid_plot.plot_basemap(min_lon=min_lon,max_lon=max_lon,min_lat=min_lat,max_lat=max_lat,auto_range=False,resolution='h')
-            #grid_plot.get_basemap()
+            grid_plot.plot_basemap(min_lon=min_lon,max_lon=max_lon,min_lat=min_lat,max_lat=max_lat,auto_range=False,resolution='h', projection='lcc')
 
             # Si hay un shapefile elegido por el usuario se toma ese, en otro caso se toma el shapefile por defecto
             if basemapShapeFile is not None:
@@ -215,12 +231,13 @@ class RainbowRadarProcessor(object):
                                 colorbar_label=self.__rainbowRadar.getRadarVariable()[5],
                                 title=titulo,
                                 title_flag=True,
+                                colorbar_flag=True,
                                 vmin=self.__rainbowRadar.getRadarVariable()[3],
                                 vmax=self.__rainbowRadar.getRadarVariable()[4],
-                                cmap=self.__rainbowRadar.getRadarVariable()[2])
+                                cmap=self.__rainbowRadar.getRadarVariable()[2],
+                                level=level,
+                                fig=fig,ax=ax)
 
-            # Se comenta para mantener consistencia de los graficos obtenidos a partir de los datos crudos
-            # grid_plot.plot_crosshairs(line_style='k--', linewidth=0.5)
             # Se agregan las latitudes y longitudes
 
             orig_lat = self.__rainbowRadar.getLatitude()
@@ -245,7 +262,7 @@ class RainbowRadarProcessor(object):
             shift = (-self.__rainbowRadar.getStopRange(), self.__rainbowRadar.getStopRange(), -self.__rainbowRadar.getStopRange(), self.__rainbowRadar.getStopRange())
 
             # Se genera el grafico
-            im = ax.imshow(grilla.fields[self.__rainbowRadar.getRadarVariable()[1]]['data'][0],
+            im = ax.imshow(grilla.fields[self.__rainbowRadar.getRadarVariable()[1]]['data'][level],
                            origin='origin',
                            vmin=self.__rainbowRadar.getRadarVariable()[3],
                            vmax=self.__rainbowRadar.getRadarVariable()[4],
@@ -269,7 +286,6 @@ class RainbowRadarProcessor(object):
 
             RadarDisplay.set_limits(radar_range, radar_range)
             RadarDisplay.plot_cross_hair(Rmax)
-            RadarDisplay.plot_grid_lines() # Para ver si se agregan las lats/lons
 
         res = fig2img(plt.gcf())
 
@@ -278,7 +294,7 @@ class RainbowRadarProcessor(object):
         return res
 
     def showImage(self, elevation):
-        self.getImageFromCartesianGrid(elevation).show()
+        self.getCAPPIImage(elevation).show()
 
     def saveImageToFile(self, pathOutput=None, fileOutput=None,
                         imageType=PNG, method='grid',  image_method_params=None):
@@ -293,17 +309,23 @@ class RainbowRadarProcessor(object):
         :type image_method_params: dict
         :return:
         """
-        method_params = {'elevation': 0}
-        if image_method_params is not None:
-            method_params.update(image_method_params)
 
         if method == 'grid':
 
-            elevationImg = self.getImageFromCartesianGrid(**method_params)
+            method_params = {'level': 0}
+            if image_method_params is not None:
+                method_params.update(image_method_params)
+            elevationImg = self.getCAPPIImage(**method_params)
+            m_filename_metadata = "_nivel_" + str(method_params['level'])
 
         elif method == 'simple':
 
-            elevationImg = self.getRawDataImage(**method_params)
+            method_params = {'elevation': 0}
+            if image_method_params is not None:
+                method_params.update(image_method_params)
+            elevationImg = self.getPPIImage(**method_params)
+            m_filename_metadata = "_elevacion_" + str(method_params['elevation'])
+
         else:
             raise Exception(
                 "El metodo " + method + " no es un metodo valido para obtener la imagen. Posibles: [grid,simple] ")
@@ -311,15 +333,15 @@ class RainbowRadarProcessor(object):
         if fileOutput is not None and pathOutput is not None:
             if imageType == JPEG:
                 elevationImg.convert("RGB").save(
-                    pathOutput + fileOutput + "_elevacion_" + str(method_params['elevation']) + '.' + imageType, quality=95)
+                    pathOutput + fileOutput + m_filename_metadata + '.' + imageType, quality=95)
             else:
-                elevationImg.save(pathOutput + fileOutput + "_elevacion_" + str(method_params['elevation']) + '.' + imageType, quality=95)
+                elevationImg.save(pathOutput + fileOutput + m_filename_metadata + '.' + imageType, quality=95)
         elif fileOutput is None and pathOutput is not None:
             if imageType == JPEG:
                 elevationImg.convert("RGB").save(
-                    pathOutput + self.__volFileName + "_elevacion_" + str(method_params['elevation']) + '.' + imageType, quality=95)
+                    pathOutput + self.__volFileName + m_filename_metadata + '.' + imageType, quality=95)
             else:
-                elevationImg.save(pathOutput + self.__volFileName + "_elevacion_" + str(method_params['elevation']) + '.' + imageType, quality=95)
+                elevationImg.save(pathOutput + self.__volFileName + m_filename_metadata + '.' + imageType, quality=95)
         elif fileOutput is not None and pathOutput is None:
             if imageType == JPEG:
                 elevationImg.convert("RGB").save(self.__volPath + fileOutput + '.' + imageType, quality=95)
@@ -328,30 +350,35 @@ class RainbowRadarProcessor(object):
         else:
             if imageType == JPEG:
                 elevationImg.convert("RGB").save(
-                    self.__volPath + self.__volFileName + "_elevacion_" + str(method_params['elevation']) + '.' + imageType, quality=95)
+                    self.__volPath + self.__volFileName + m_filename_metadata + '.' + imageType, quality=95)
             else:
                 elevationImg.save(
-                    self.__volPath + self.__volFileName + "_elevacion_" + str(method_params['elevation']) + '.' + imageType, quality=95)
+                    self.__volPath + self.__volFileName + m_filename_metadata + '.' + imageType, quality=95)
 
-    def saveToNETCDF(self, elevation, outFilePath, outFileName, bsp_value=None):
+    def saveToNETCDF(self, outFilePath, outFileName):
         """
         Guarda la grilla en formato NETCDF
 
-        :param elevation: elevacion a procesar.
+
         :param outFilePath: directorio donde se almacenará el archivo.
         :param outFileName: nombre del archivo a guardar.
-        :param bsp_value: valor de BSP para generar la grilla.
+
 
         """
-        pyart.io.write_grid(outFilePath + outFileName + "_elevacion_" + str(elevation) + ".netCDF",
-                            self.__rainbowRadar.getCartesianGrid(elevation, _bsp=bsp_value),
+        pyart.io.write_grid(outFilePath + outFileName + ".netCDF",
+                            self.__rainbowRadar.getCartesianGrid(),
                             format='NETCDF3_64BIT',
                             arm_time_variables=True)
 
-    def saveToGTiff(self, elevation, outFilePath, outFileName, bsp_value='calculate'):
+    def saveToGTiff(self, level, outFilePath, outFileName):
 
-        g = self.__rainbowRadar.getCartesianGrid(elevation, _bsp=bsp_value)
-
-        pyart.io.write_grid_geotiff(g, filename=outFilePath + outFileName + "_elevacion_" + str(elevation) + ".tif",
+        pyart.io.write_grid_geotiff(self.__rainbowRadar.getCartesianGrid(),
+                                    filename=outFilePath + outFileName + "_level_" + str(level) + ".tif",
                                     field=self.__rainbowRadar.getRadarVariable()[1],
-                                    warp=False)
+                                    level=level,
+                                    rgb=True,
+                                    cmap= self.__rainbowRadar.getRadarVariable()[2],
+                                    vmin= self.__rainbowRadar.getRadarVariable()[3],
+                                    vmax= self.__rainbowRadar.getRadarVariable()[4],
+                                    warp=True
+                                    )
