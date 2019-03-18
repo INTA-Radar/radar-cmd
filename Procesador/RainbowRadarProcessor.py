@@ -376,9 +376,9 @@ class RainbowRadarProcessor(object):
                                     filename=outFilePath + outFileName + "_level_" + str(level) + ".tif",
                                     field=self.__rainbowRadar.getRadarVariable()[1],
                                     level=level,
-                                    rgb=True,
-                                    cmap= self.__rainbowRadar.getRadarVariable()[2],
-                                    vmin= self.__rainbowRadar.getRadarVariable()[3],
-                                    vmax= self.__rainbowRadar.getRadarVariable()[4],
+                                    #rgb=True,
+                                    #cmap= self.__rainbowRadar.getRadarVariable()[2],
+                                    #vmin= self.__rainbowRadar.getRadarVariable()[3],
+                                    #vmax= self.__rainbowRadar.getRadarVariable()[4],
                                     warp=True
                                     )

@@ -279,9 +279,9 @@ class MosaicGenerator(object):
                                                    + "_nivel_" + str(level) + ".tif",
                                     field=self.__radars[0].getRadarVariable()[1],
                                     level=level,
-                                    rgb=True,
-                                    cmap=self.__radars[0].getRadarVariable()[2],
-                                    vmin=self.__radars[0].getRadarVariable()[3],
-                                    vmax=self.__radars[0].getRadarVariable()[4],
+                                    #rgb=True,
+                                    #cmap=self.__radars[0].getRadarVariable()[2],
+                                    #vmin=self.__radars[0].getRadarVariable()[3],
+                                    #vmax=self.__radars[0].getRadarVariable()[4],
                                     warp=True
                                     )
