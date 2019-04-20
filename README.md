@@ -1,4 +1,6 @@
 # radar-cmd
+[![codecov](https://codecov.io/gh/INTA-Radar/radar-cmd/branch/master/graph/badge.svg)](https://codecov.io/gh/INTA-Radar/radar-cmd)
+
 Aplicación de línea de comandos para procesamiento de volumenes utilizando Py-ART
 
 ## Dependencias
