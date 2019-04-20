@@ -55,7 +55,7 @@ for name,file in files_precipitaciones.items():
     pp.computePrecipitations(0)
     p = RainbowRadarProcessor(rainbowRadar=pp.genRainRainbowRadar())
     p.saveImageToFile(imageType=PNG, pathOutput='res/', fileOutput=name,
-                      image_method_params={'elevation': 0,
+                      image_method_params={'level': 0,
                                            'paddingImg': 1}
                       )
     p.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput=name)
@@ -70,8 +70,8 @@ for name,file in files_precipitaciones.items():
                       image_method_params={'elevation': 0,
                                            'paddingImg': 1})
 
-    p.saveToGTiff(elevation=0, outFilePath='res/', outFileName=name)
-    p.saveToNETCDF(elevation=0, outFilePath='res/', outFileName=name)
+    p.saveToGTiff(0, outFilePath='res/', outFileName=name)
+    p.saveToNETCDF(outFilePath='res/', outFileName=name)
 
     #pp.saveImageToFile()
 
@@ -85,11 +85,11 @@ for name,file in files.items():
     p = RainbowRadarProcessor(rainbowRadar=rr)
 
     p.saveImageToFile(imageType=PNG,  pathOutput='res/', fileOutput=name,
-                      image_method_params = {'elevation': 0,
+                      image_method_params = {'level': 0,
                                              'paddingImg':1})
 
     p.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput=name,
-                      image_method_params=  {'elevation': 0,
+                      image_method_params=  {'level': 0,
                                              'paddingImg': 1})
 
     p.saveImageToFile(imageType=PNG,pathOutput='res/', fileOutput=name+'_simple', method='simple',
@@ -100,8 +100,8 @@ for name,file in files.items():
                       image_method_params=  {'elevation': 0,
                                              'paddingImg': 1})
 
-    p.saveToGTiff(elevation=0, outFilePath='res/',outFileName=name)
-    p.saveToNETCDF(elevation=0, outFilePath='res/',outFileName=name)
+    p.saveToGTiff(0, outFilePath='res/',outFileName=name)
+    p.saveToNETCDF(outFilePath='res/',outFileName=name)
 
 
 #################################################################
@@ -113,15 +113,14 @@ for name,file in files_mosaico.items():
     print(name, ' ; ', file)
     radar = RainbowRadar('',file[1], radarVariable=dBZ)
     # Aplico una mascara a datos menores a 20 y mayores a 40
-    radar.setMask("(20 > a) | (a > 40)")
     radars.append(radar)
 
 mg = MosaicGenerator(radars=radars)
 
-mg.saveImageToFile(imageType=PNG, pathOutput='res/', fileOutput='masked_mosaico',image_params={'elevation':0})
-mg.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput='masked_mosaico',image_params={'elevation':0})
-mg.saveToGTiff(elevation=0, outFilePath='res/',outFileName='masked_mosaico')
-mg.saveToNETCDF(0, 'res/','masked_mosaico')
+mg.saveImageToFile(imageType=PNG, pathOutput='res/', fileOutput='masked_mosaico',image_params={'level':0,'mask':'(20 > a) | (a > 40)'})
+mg.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput='masked_mosaico',image_params={'level':0,'mask':'(20 > a) | (a > 40)'})
+mg.saveToGTiff(0, outFilePath='res/',outFileName='masked_mosaico')
+mg.saveToNETCDF('res/','masked_mosaico')
 
 
 # Sin mascara
@@ -133,7 +132,7 @@ for name,file in files_mosaico.items():
 
 mg = MosaicGenerator(radars=radars)
 
-mg.saveImageToFile(imageType=PNG, pathOutput='res/', fileOutput='mosaico',image_params={'elevation':0})
-mg.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput='mosaico',image_params={'elevation':0})
-mg.saveToGTiff(elevation=0, outFilePath='res/',outFileName='mosaico')
-mg.saveToNETCDF(0, 'res/','mosaico')
+mg.saveImageToFile(imageType=PNG, pathOutput='res/', fileOutput='mosaico',image_params={'level':0})
+mg.saveImageToFile(imageType=JPEG, pathOutput='res/', fileOutput='mosaico',image_params={'level':0})
+mg.saveToGTiff(0, outFilePath='res/',outFileName='mosaico')
+mg.saveToNETCDF('res/','mosaico')
