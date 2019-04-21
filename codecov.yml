@@ -1,5 +1,6 @@
 fixes:
   - "Test.py::Testing/Test.py"
   - "TestMosaic.py::Testing/TestMosaic.py"
+  - "*/radar-cmd/*::"
 ignore:
   - "Testing/*"
