@@ -60,3 +60,12 @@ coverage run --rcfile=".coveragec.radar_cmd" -a  radar-cmd.py -f Testing/datos/2
 # Testeamos tracking.py
 coverage run --rcfile=".coveragec.tracking" -a  tracking.py -f Testing/datos/tint/tracking_objects -ele 0 -tparams '{"MIN_SIZE":30}' -m anim
 coverage run --rcfile=".coveragec.tracking" -a  tracking.py -f Testing/datos/tint/tracking_objects -ele 0 -tparams '{"MIN_SIZE":30}'
+
+#Combino los resultados
+coverage combine .coverage.radar_cmd .coverage.tracking
+
+# Genero el XML
+coverage xml -i
+
+# Subo los cambios a codecov
+#codecov --token="c6337c52-28a3-4b3d-ad22-f1de898db5b9"
