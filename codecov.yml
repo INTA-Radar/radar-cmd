@@ -1,6 +1,5 @@
 fixes:
-  - "/home/andres/PycharmProjects/radar-cmd/::radar-cmd/"
   - "Test.py::Testing/Test.py"
   - "TestMosaic.py::Testing/TestMosaic.py"
 ignore:
-  - "Testing/"
+  - "Testing/*"
