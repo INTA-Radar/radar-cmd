@@ -82,7 +82,7 @@ if __name__ == '__main__':
     grid_gen = []
     for file in filenames:
         rr = RainbowRadar('', file, radarVariable=dBZ)
-        grid_gen.append(rr.getCartesianGrid(args['ele']))
+        grid_gen.append(rr.getCartesianGrid())
 
     # Instantiate tracks object and view parameter defaults
     tracks_obj = Cell_tracks()
